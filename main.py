@@ -22,7 +22,7 @@ import random
 # 遺伝子情報の長さ
 GENOM_LENGTH = 100
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 10
+MAX_GENOM_LIST = 100
 # 遺伝子選択数
 SELECT_GENOM = 20
 # 個体突然変異確率
