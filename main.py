@@ -20,7 +20,7 @@ import pandas as pd
 import random
 
 # 遺伝子情報の長さ
-GENOM_LENGTH = 100
+GENOM_LENGTH = 50
 # 遺伝子集団の長さ
 MAX_GENOM_LIST = 100
 # 遺伝子選択数
