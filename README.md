@@ -11,4 +11,5 @@ MemeticAlgorithm
 
 ファイル説明
 > main.py : メメティックアルゴリズムを実行させるプログラム
+
 > GeneticAlgorithm.py : 遺伝子情報とその遺伝子の評価値を格納するクラス
