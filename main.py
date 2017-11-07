@@ -22,7 +22,7 @@ import random
 # 遺伝子情報の長さ
 GENOM_LENGTH = 50
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 100
+MAX_GENOM_LIST = 10
 # 遺伝子選択数
 SELECT_GENOM = 20
 # 個体突然変異確率
@@ -30,7 +30,7 @@ INDIVIDUAL_MUTATION = 0.1
 # 遺伝子突然変異確率
 GENOM_MUTATION = 0.1
 # 繰り返す世代数
-MAX_GENERATION = 200
+MAX_GENERATION = 2
 # 使用できる車両数
 VEHICLE = 4
 
@@ -55,12 +55,13 @@ def createCostMatrix(num_shelter):
             if j == num_shelter - 1:
                 arr = np.append(arr, np.array([dis]), axis=0)
                 dis = []
-    print(df[1:11])
+
+    print(df[0:11])
     print("コスト行列-----------------------------------")
     print(arr)
     print("---------------------------------------------")
     np.savetxt("./output/cost.csv", arr, delimiter=',', fmt='%.2f')
-
+    return arr
 
 """
 引数で指定された避難所数と車両数に基づき，
@@ -77,8 +78,53 @@ def createGenom(num_shelter, m):
     # ルート区切りナンバーの数は車両数-1
     genom_list = [i for i in range(1, num_shelter + m - 1)]
     random.shuffle(genom_list)
+    #genom_list = genom_list[::-1] #逆順
     return ga.genom(genom_list, 0)
 
+"""
+評価関数．
+巡回路の移動コストが低い方が良い解となる．
+@INPUT：
+    評価を行うgenomClass
+@OUTPUT:
+    評価処理をしたgenomClass
+"""
+def evaluation(ga):
+    # 配送順序の配列を変数genomにコピー
+    genom = ga.getGenom()[:]
+    route_cost = 0
+    total_cost = 0
+    route_flag = False
+    for i in range(len(genom)):
+        # ルート区切り番号だった場合
+        if genom[i] > num_shelter - 1: # >10
+            if route_flag == True:
+                route_cost += cost[genom[i-1]][0]
+                print("{}→{}".format(genom[i-1], 0))
+            total_cost += route_cost
+            route_cost = 0
+            route_flag = False
+            print("_{}_区切り".format(genom[i]))
+        else : # ルート区切り番号ではない場合(避難所番号)
+
+            # 現在参照している避難所番号の前が区切り番号だった，
+            # もしくは遺伝子の最初を参照している場合
+            if route_flag == False:
+                # 配送拠点から避難所までの移動コストを加算
+                route_cost += cost[0][genom[i]]
+                route_flag = True
+                print("{}→{}".format(0, genom[i]))
+            else : # フラグがTrue，つまり経路続行
+                route_cost += cost[genom[i-1]][genom[i]]
+                print("{}→{}".format(genom[i-1], genom[i]))
+    # 遺伝子の最後の番号が区切り番号でない場合，
+    # 避難所から配送拠点までの移動コストを加算する
+    if route_flag == True:
+        total_cost += route_cost + cost[genom[i]][0]
+        print("{}→{}".format(genom[i], 0))
+    print("総移動コスト:{}".format(total_cost))
+    print("-------------経路------------")
+    return total_cost
 
 
 if __name__ == '__main__':
@@ -89,7 +135,8 @@ if __name__ == '__main__':
     num_shelter = 11
 
     # 各避難所間の移動コスト行列を生成する
-    createCostMatrix(num_shelter)
+    # 2次元配列costで保持
+    cost = createCostMatrix(num_shelter)
 
     # 第一世代の個体集団を生成
     current_generation_individual_group = []
@@ -99,3 +146,17 @@ if __name__ == '__main__':
     """"
     ここまで第一世代
     """
+
+    for count_ in range(1, MAX_GENERATION + 1):
+        #現行世代個体集団の遺伝子を評価し，genomClassに代入
+        for i in range(MAX_GENOM_LIST):
+            evaluation_result = evaluation(current_generation_individual_group[i])
+            current_generation_individual_group[i].setEvaluation(evaluation_result)
+
+        #遺伝子集団それぞれの評価値確認
+        print("====第{}世代====".format(count_))
+        for i in range(MAX_GENOM_LIST):
+            print("遺伝子<{}>:{}".format(i + 1, current_generation_individual_group[i].getEvaluation()))
+
+        #エリート個体を選択する
+        #elite_genes = select(current_generation_individual_group, SELECT_GENOM)
