@@ -22,7 +22,7 @@ import random
 # 遺伝子情報の長さ
 GENOM_LENGTH = 50
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 10
+MAX_GENOM_LIST = 100
 # 遺伝子選択数
 SELECT_GENOM = 20
 # 個体突然変異確率
@@ -38,9 +38,9 @@ VEHICLE = 4
 """
 避難所の距離に基づいたコスト行列を返す
 @INPUT:
-    None
+    num_shelter : 避難所数
 @OUTPUT:
-    arr: コスト行列
+    arr : コスト行列
 """
 def createCostMatrix(num_shelter):
     dis = []
@@ -85,9 +85,9 @@ def createGenom(num_shelter, m):
 評価関数．
 巡回路の移動コストが低い方が良い解となる．
 @INPUT：
-    評価を行うgenomClass
+    ga : 評価を行うgenomClass
 @OUTPUT:
-    評価処理をしたgenomClass
+    total_cost : 評価処理をしたgenomClass
 """
 def evaluation(ga):
     # 配送順序の配列を変数genomにコピー
@@ -126,12 +126,32 @@ def evaluation(ga):
     print("-------------経路------------")
     return total_cost
 
+"""
+【エリート選択】
+評価値が優れている順にソートを行った後，
+一定以上の遺伝子を抽出する
+@INPUT:
+    ga : 選択を行うgenomClassの配列
+    elite : 遺伝子選択数
+@OUTPUT:
+    選択処理をした一定のエリートgenomClass
+"""
+def select(ga, elite):
+    # 現行世代個体集団の評価値を高い順にソートする
+    sort_result = sorted(ga, reverse=True, key=lambda u: u.evaluation)
+    # 一定の上位を抽出する
+    result = []
+
+
+
+
+
 
 if __name__ == '__main__':
 
     filepath = "./data/" #ファイルパス
     df = pd.read_csv(filepath + "data_r101.csv") #読み出す避難所の位置情報ファイル
-    #num_shelter = len(df.index) - 1
+    #num_shelter = len(df.index)
     num_shelter = 11
 
     # 各避難所間の移動コスト行列を生成する
