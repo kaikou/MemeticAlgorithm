@@ -21,6 +21,8 @@ import random
 GENOM_LENGTH = 50
 # 遺伝子集団の長さ
 MAX_GENOM_LIST = 5
+# 各両親から生成される子個体の数
+MAX_CHILDREN = 10
 # 遺伝子選択数
 SELECT_GENOM = 20
 # 個体突然変異確率
@@ -155,8 +157,13 @@ def setRondomOrder():
     random.shuffle(random_order)
     return(random_order)
 
-
-
+"""
+Edge Assembly Crossover(EAX)関数
+親Aと親Bの交叉によって子個体を生成する
+"""
+def edgeAssemblyCrossover(P_A, P_B):
+    print("確認")
+    print(P_A)
 
 
 if __name__ == '__main__':
@@ -185,10 +192,29 @@ if __name__ == '__main__':
         order = setRondomOrder()
         print("ランダムな順列" + str(order))
 
+        for i in range(MAX_GENOM_LIST):
+            # 集団中の全ての個体が丁度一度ずつ親P_Aとして選択される
+            if i < MAX_GENOM_LIST -1:
+                P_A = current_generation_individual_group[order[i]].getGenom()
+                P_B = current_generation_individual_group[order[i+1]].getGenom()
+                # print("P_A:{}".format(P_A))
+                # print("P_B:{}".format(P_B))
+            else:
+                P_A = current_generation_individual_group[order[i]].getGenom()
+                P_B = current_generation_individual_group[order[0]].getGenom()
+                # print("P_A:{}".format(P_A))
+                # print("P_B:{}".format(P_B))
+
+            # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
+            for j in range(MAX_CHILDREN):
+                edgeAssemblyCrossover(P_A, P_B) #GAクラスに子個体情報も持たせる？
+
+        """
         #現行世代個体集団の遺伝子を評価し，genomClassに代入
         for i in range(MAX_GENOM_LIST):
             evaluation_result = evaluation(current_generation_individual_group[i])
             current_generation_individual_group[i].setEvaluation(evaluation_result)
+        """
 
         #遺伝子集団それぞれの評価値確認
         print("====第{}世代====".format(count_))
