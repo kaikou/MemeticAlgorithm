@@ -10,8 +10,6 @@
 # GeneticAlgorithm.pyは遺伝子情報とその遺伝子の評価値を格納するclass
 # 値を取得する場合は.getGenom()
 
-
-
 import GeneticAlgorithm as ga
 import random
 from decimal import Decimal
@@ -22,7 +20,7 @@ import random
 # 遺伝子情報の長さ
 GENOM_LENGTH = 50
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 100
+MAX_GENOM_LIST = 5
 # 遺伝子選択数
 SELECT_GENOM = 20
 # 個体突然変異確率
@@ -126,22 +124,36 @@ def evaluation(ga):
     print("-------------経路------------")
     return total_cost
 
-"""
-【エリート選択】
-評価値が優れている順にソートを行った後，
-一定以上の遺伝子を抽出する
-@INPUT:
-    ga : 選択を行うgenomClassの配列
-    elite : 遺伝子選択数
-@OUTPUT:
-    選択処理をした一定のエリートgenomClass
-"""
-def select(ga, elite):
-    # 現行世代個体集団の評価値を高い順にソートする
-    sort_result = sorted(ga, reverse=True, key=lambda u: u.evaluation)
-    # 一定の上位を抽出する
-    result = []
+# """
+# 【エリート選択】
+# 評価値が優れている順にソートを行った後，
+# 一定以上の遺伝子を抽出する
+# @INPUT:
+#     ga : 選択を行うgenomClassの配列
+#     elite : 遺伝子選択数
+# @OUTPUT:
+#     選択処理をした一定のエリートgenomClass
+# """
+# def select(ga, elite):
+#     # 現行世代個体集団の評価値を高い順にソートする
+#     sort_result = sorted(ga, reverse=True, key=lambda u: u.evaluation)
+#     # 一定の上位を抽出する
+#     result = []
 
+
+"""
+集団中の個体をランダムな順序に並べるための個体番号順列を生成する
+@INPUT:
+    None
+@OUTPUT:
+    ランダムに並べた遺伝子集団サイズ分の順列
+"""
+def setRondomOrder():
+    #random_order_list = []
+    # 集団サイズ分の順列リストを作り，シャッフルする
+    random_order = [i for i in range(MAX_GENOM_LIST)]
+    random.shuffle(random_order)
+    return(random_order)
 
 
 
@@ -160,14 +172,19 @@ if __name__ == '__main__':
 
     # 第一世代の個体集団を生成
     current_generation_individual_group = []
+    print("現行の個体集団")
     for i in range(MAX_GENOM_LIST):
         current_generation_individual_group.append(createGenom(num_shelter, VEHICLE))
         print(current_generation_individual_group[i].getGenom())
     """"
     ここまで第一世代
+    この先繰り返し
     """
-
     for count_ in range(1, MAX_GENERATION + 1):
+        #集団中の個体をランダムな順列に並べる
+        order = setRondomOrder()
+        print("ランダムな順列" + str(order))
+
         #現行世代個体集団の遺伝子を評価し，genomClassに代入
         for i in range(MAX_GENOM_LIST):
             evaluation_result = evaluation(current_generation_individual_group[i])
