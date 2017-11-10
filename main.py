@@ -95,17 +95,15 @@ def createGenom(num_shelter, m):
     return ga.genom(genom_list, 0, 0)
 
 """
-評価関数．
-巡回路の移動コストが低い方が良い解となる．
+車両が通るエッジを表す行列を生成
 @INPUT：
-    ga : 評価を行うgenomClass
+    ga : エッジを生成するgenomClass
 @OUTPUT:
-    total_cost : 評価処理をしたgenomClass
     x : 移動するエッジの行列
 """
-def evaluation(ga):
+def createEdgeMatrix(ga):
     # 配送順序の配列を変数genomにコピー
-    genom = ga.getGenom()[:]
+    genom = ga.getGenom()
     total_cost = 0
     route_flag = False
     # どの避難所間を通ったかを示す2次元配列を0で初期化
@@ -141,7 +139,7 @@ def evaluation(ga):
 
     print("総移動コスト:{}".format(total_cost))
     # 総移動コストと，移動エッジ行列を返す
-    return total_cost, x
+    return x
 
 # """
 # 【エリート選択】
@@ -175,12 +173,58 @@ def setRondomOrder():
     return(random_order)
 
 """
-Edge Assembly Crossover(EAX)関数
-親Aと親Bの交叉によって子個体を生成する
+EAXのステップ1と2を処理する関数
+ステップ1: G_AB集合を生成する
+ステップ2: AB-cycleによる閉路を生成する
+@INPUT:
+    P_A : 親AのgenomClass
+    P_B : 親BのgenomClass
+    ※それぞれ.getGenom() .getEdge()で遺伝子情報とエッジ情報を取得
+@OUTPUT:
+
 """
-def edgeAssemblyCrossover(P_A, P_B):
-    print("確認")
-    print(P_A)
+def preEAX(P_A, P_B):
+    E_A = []
+    E_B = []
+    AB_cycle = []
+    x_A = P_A.getEdge()
+    x_B = P_B.getEdge()
+    G_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
+    edgelist = []
+
+    # エッジがある行列番号をE_A[]とE_B[]に追加
+    for i in range(num_shelter):
+        for j in range(i, num_shelter):
+            if(x_A[i][j] == 1 or x_A[j][i] == 1):
+                E_A.append([i, j])
+            if(x_B[i][j] == 1 or x_B[j][i] == 1):
+                E_B.append([i, j])
+
+    # 一旦集合演算できるようにsetに変換
+    A = set(map(tuple, E_A))
+    B = set(map(tuple, E_B))
+    # A, Bの和集合から，A, Bの共通要素を排除
+    AB = A.union(B).difference(A.intersection(B))
+
+    # リスト型に戻しソート
+    edgelist = sorted(list(AB))
+
+    for i in range(num_shelter):
+        for j in range(i, num_shelter):
+            for k, l in edgelist:
+                G_AB[k][l] = 1
+
+    print("x_A:")
+    print(x_A)
+    print("x_B:")
+    print(x_B)
+    print("G_AB:")
+    print(G_AB)
+
+
+def edgeAssemblyCrossover():
+    pass
+
 
 
 if __name__ == '__main__':
@@ -210,24 +254,33 @@ if __name__ == '__main__':
         order = setRondomOrder()
         print("ランダムな順列" + str(order))
 
+        # 現行の集団中の個体全てのエッジ情報をgenomClassに保存
+        for i in range(MAX_GENOM_LIST):
+            x = createEdgeMatrix(current_generation_individual_group[i])
+            current_generation_individual_group[i].setEdge(x)
+
         for i in range(MAX_GENOM_LIST):
             # 集団中の全ての個体が丁度一度ずつ親P_Aとして選択される
             if i < MAX_GENOM_LIST -1:
-                P_A = current_generation_individual_group[order[i]].getGenom()
-                P_B = current_generation_individual_group[order[i+1]].getGenom()
+                P_A = current_generation_individual_group[order[i]]
+                P_B = current_generation_individual_group[order[i+1]]
                 # print("P_A:{}".format(P_A))
                 # print("P_B:{}".format(P_B))
             else:
-                P_A = current_generation_individual_group[order[i]].getGenom()
-                P_B = current_generation_individual_group[order[0]].getGenom()
+                P_A = current_generation_individual_group[order[i]]
+                P_B = current_generation_individual_group[order[0]]
                 # print("P_A:{}".format(P_A))
                 # print("P_B:{}".format(P_B))
 
+            # EAXのステップ1~2を処理する
+            print("【{}】ペア目の親".format(i))
+            preEAX(P_A, P_B)
+
             # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
             for j in range(MAX_CHILDREN):
-                edgeAssemblyCrossover(P_A, P_B) #GAクラスに子個体情報も持たせる？
+                edgeAssemblyCrossover() #GAクラスに子個体情報も持たせる
 
-
+        """
         #現行世代個体集団の遺伝子を評価し，genomClassに代入
         for i in range(MAX_GENOM_LIST):
             evaluation_result, x = evaluation(current_generation_individual_group[i])
@@ -235,11 +288,12 @@ if __name__ == '__main__':
             current_generation_individual_group[i].setEdge(x) # 移動エッジ行列をgenomClassに保存
         # print("エッジ確認")
         # print(current_generation_individual_group[4].getEdge())
+        """
 
-        #遺伝子集団それぞれの評価値確認
-        print("====第{}世代====".format(count_))
-        for i in range(MAX_GENOM_LIST):
-            print("遺伝子<{}>:{}".format(i + 1, current_generation_individual_group[i].getEvaluation()))
+        # #遺伝子集団それぞれの評価値確認
+        # print("====第{}世代====".format(count_))
+        # for i in range(MAX_GENOM_LIST):
+        #     print("遺伝子<{}>:{}".format(i + 1, current_generation_individual_group[i].getEvaluation()))
 
         #エリート個体を選択する
         #elite_genes = select(current_generation_individual_group, SELECT_GENOM)
