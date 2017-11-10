@@ -15,7 +15,6 @@ import random
 from decimal import Decimal
 import numpy as np
 import pandas as pd
-import random
 
 # 遺伝子情報の長さ
 GENOM_LENGTH = 50
@@ -32,7 +31,21 @@ GENOM_MUTATION = 0.1
 # 繰り返す世代数
 MAX_GENERATION = 2
 # 使用できる車両数
-VEHICLE = 4
+VEHICLE = 3
+
+
+
+"""
+避難所情報のデータフレームを生成する
+@INPUT:
+    filepath: 読み出すファイルパス
+    data_name: 読み出すファイル名
+@OUTPUT:
+    読み出したデータのデータフレーム
+"""
+def createDataFrame(filepath, data_name):
+    input_path = filepath + data_name + ".csv"
+    return pd.read_csv(input_path)
 
 
 """
@@ -92,17 +105,16 @@ def createGenom(num_shelter, m):
 def evaluation(ga):
     # 配送順序の配列を変数genomにコピー
     genom = ga.getGenom()[:]
-    route_cost = 0
     total_cost = 0
     route_flag = False
+    # どの避難所間を通ったかを示す2次元配列を0で初期化
+    x = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
     for i in range(len(genom)):
         # ルート区切り番号だった場合
         if genom[i] > num_shelter - 1: # >10
             if route_flag == True:
-                route_cost += cost[genom[i-1]][0]
+                x[genom[i-1]][0] = 1
                 print("{}→{}".format(genom[i-1], 0))
-            total_cost += route_cost
-            route_cost = 0
             route_flag = False
             print("_{}_区切り".format(genom[i]))
         else : # ルート区切り番号ではない場合(避難所番号)
@@ -110,20 +122,24 @@ def evaluation(ga):
             # 現在参照している避難所番号の前が区切り番号だった，
             # もしくは遺伝子の最初を参照している場合
             if route_flag == False:
-                # 配送拠点から避難所までの移動コストを加算
-                route_cost += cost[0][genom[i]]
+                x[0][genom[i]] = 1
                 route_flag = True
                 print("{}→{}".format(0, genom[i]))
             else : # フラグがTrue，つまり経路続行
-                route_cost += cost[genom[i-1]][genom[i]]
+                x[genom[i-1]][genom[i]] = 1
                 print("{}→{}".format(genom[i-1], genom[i]))
     # 遺伝子の最後の番号が区切り番号でない場合，
-    # 避難所から配送拠点までの移動コストを加算する
     if route_flag == True:
-        total_cost += route_cost + cost[genom[i]][0]
+        x[genom[i]][0] = 1
         print("{}→{}".format(genom[i], 0))
+
+    #総移動コストの計算
+    for i in range(num_shelter):
+        for j in range(num_shelter):
+            total_cost += cost[i][j] * x[i][j]
+            
     print("総移動コスト:{}".format(total_cost))
-    print("-------------経路------------")
+    #print(x)
     return total_cost
 
 # """
@@ -168,8 +184,9 @@ def edgeAssemblyCrossover(P_A, P_B):
 
 if __name__ == '__main__':
 
-    filepath = "./data/" #ファイルパス
-    df = pd.read_csv(filepath + "data_r101.csv") #読み出す避難所の位置情報ファイル
+    # 避難所情報のデータフレームを生成する
+    # 引数[0]:ファイルパス，[1]:ファイル名
+    df = createDataFrame("./data/", "data_r101")
     #num_shelter = len(df.index)
     num_shelter = 11
 
@@ -209,12 +226,12 @@ if __name__ == '__main__':
             for j in range(MAX_CHILDREN):
                 edgeAssemblyCrossover(P_A, P_B) #GAクラスに子個体情報も持たせる？
 
-        """
+
         #現行世代個体集団の遺伝子を評価し，genomClassに代入
         for i in range(MAX_GENOM_LIST):
             evaluation_result = evaluation(current_generation_individual_group[i])
             current_generation_individual_group[i].setEvaluation(evaluation_result)
-        """
+
 
         #遺伝子集団それぞれの評価値確認
         print("====第{}世代====".format(count_))
