@@ -92,7 +92,7 @@ def createGenom(num_shelter, m):
     genom_list = [i for i in range(1, num_shelter + m - 1)]
     random.shuffle(genom_list)
     #genom_list = genom_list[::-1] #逆順
-    return ga.genom(genom_list, 0)
+    return ga.genom(genom_list, 0, 0)
 
 """
 評価関数．
@@ -101,6 +101,7 @@ def createGenom(num_shelter, m):
     ga : 評価を行うgenomClass
 @OUTPUT:
     total_cost : 評価処理をしたgenomClass
+    x : 移動するエッジの行列
 """
 def evaluation(ga):
     # 配送順序の配列を変数genomにコピー
@@ -137,10 +138,10 @@ def evaluation(ga):
     for i in range(num_shelter):
         for j in range(num_shelter):
             total_cost += cost[i][j] * x[i][j]
-            
+
     print("総移動コスト:{}".format(total_cost))
-    #print(x)
-    return total_cost
+    # 総移動コストと，移動エッジ行列を返す
+    return total_cost, x
 
 # """
 # 【エリート選択】
@@ -200,7 +201,7 @@ if __name__ == '__main__':
     for i in range(MAX_GENOM_LIST):
         current_generation_individual_group.append(createGenom(num_shelter, VEHICLE))
         print(current_generation_individual_group[i].getGenom())
-    """"
+    """
     ここまで第一世代
     この先繰り返し
     """
@@ -229,9 +230,11 @@ if __name__ == '__main__':
 
         #現行世代個体集団の遺伝子を評価し，genomClassに代入
         for i in range(MAX_GENOM_LIST):
-            evaluation_result = evaluation(current_generation_individual_group[i])
+            evaluation_result, x = evaluation(current_generation_individual_group[i])
             current_generation_individual_group[i].setEvaluation(evaluation_result)
-
+            current_generation_individual_group[i].setEdge(x) # 移動エッジ行列をgenomClassに保存
+        # print("エッジ確認")
+        # print(current_generation_individual_group[4].getEdge())
 
         #遺伝子集団それぞれの評価値確認
         print("====第{}世代====".format(count_))
