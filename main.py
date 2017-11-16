@@ -184,13 +184,13 @@ EAXのステップ1と2を処理する関数
 
 """
 def preEAX(P_A, P_B):
-    E_A = []
-    E_B = []
-    AB_cycle = []
-    x_A = P_A.getEdge()
-    x_B = P_B.getEdge()
+    E_A = [] #親Aのエッジを格納するリスト
+    E_B = [] #親Bのエッジを格納するリスト
+    x_A = P_A.getEdge() # 親Aの遺伝子リストを取得
+    x_B = P_B.getEdge() # 親Bの遺伝子リストを取得
     G_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
-    edgelist = []
+    edgelist = [] #集合型からリスト型に戻す時に格納するリスト
+    AB_cycle = []
 
     # エッジがある行列番号をE_A[]とE_B[]に追加
     for i in range(num_shelter):
@@ -220,6 +220,7 @@ def preEAX(P_A, P_B):
     print(x_B)
     print("G_AB:")
     print(G_AB)
+
 
 
 def edgeAssemblyCrossover():

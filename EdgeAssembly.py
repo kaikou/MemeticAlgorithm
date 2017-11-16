@@ -133,8 +133,6 @@ def createEdge(Parent):
     for i in range(num_shelter):
         for j in range(num_shelter):
             total_cost += cost[i][j] * x[i][j]
-
-    print("総移動コスト:{}".format(total_cost))
     # 総移動コストと，移動エッジ行列を返す
     return total_cost, x
 
@@ -154,6 +152,9 @@ def EAX(x_A, x_B):
 
     A = set(map(tuple, E_A))
     B = set(map(tuple, E_B))
+    # .union:論理和
+    # .difference:論理差
+    # .intersection:論理積
     AB = A.union(B).difference(A.intersection(B))
 
     edgelist = sorted(list(AB))
@@ -163,8 +164,62 @@ def EAX(x_A, x_B):
         for j in range(i, num_shelter):
             for k, l in edgelist:
                 G_AB[k][l] = 1
+    # print(edgelist)
+    # print(E_A)
+    # print(E_B)
+    # return G_AB, edgelist
 
-    return G_AB
+    """
+    AB-cycleの処理
+    """
+    i = 0
+    s = 0
+    R_A = E_A
+    R_B = E_B
+    P = [0]
+
+    print("R_A:{}".format(R_A))
+    print("R_B:{}".format(R_B))
+
+
+    node = np.unique(R_A) # R_A中のエッジが接続しているノード
+
+    print("node:{}".format(node))
+    delta_A = len(node) #delta_Aは，ノードに接続するR_Aのエッジの数
+    # print(delta_A)
+    # while delta_A != 0:
+    v_e = random.choice(node)
+    print("v_e:{}".format(v_e))
+
+    # 上で選択したノードv_eにつながるR_Aのエッジをeにセットする
+    e = random.choice(list(filter(lambda x: v_e in x, R_A)))
+    print("e:{}".format(e))
+
+
+    for n, i in enumerate(R_A):
+        if i == e:
+            del R_A[n]
+    print("R_A after:{}".format(R_A))
+
+    s += 1
+    P.append(e)
+    print("s:{}".format(s))
+    print("P[s]:{}".format(P))
+
+
+
+
+
+        #ここにwhile
+        # if P[s] in E_B or s == 0:
+        #     e = filter
+
+
+
+
+        # print(delta_A)
+
+
 
 
 """
@@ -228,13 +283,17 @@ if __name__ == '__main__':
     # print(x_A)
     # print("x_B")
     # print(x_B)
+    print("Aの総移動コスト:{}".format(total_cost_A))
+    print("Bの総移動コスト:{}".format(total_cost_B))
 
-    G_AB = EAX(x_A, x_B)
+    # G_AB, edgelist = EAX(x_A, x_B)
+    EAX(x_A, x_B)
+    # print(G_AB)
+    # print(edgelist)
 
-
-    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, G_AB)
-    X, Y, N, pos, G = createGraphList()
-    graphPlot(G, N, x_A)
-    X, Y, N, pos, G = createGraphList()
-    graphPlot(G, N, x_B)
+    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    # graphPlot(G, N, G_AB)
+    # X, Y, N, pos, G = createGraphList()
+    # graphPlot(G, N, x_A)
+    # X, Y, N, pos, G = createGraphList()
+    # graphPlot(G, N, x_B)
