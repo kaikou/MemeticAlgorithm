@@ -113,9 +113,9 @@ def createEdgeMatrix(ga):
         if genom[i] > num_shelter - 1: # >10
             if route_flag == True:
                 x[genom[i-1]][0] = 1
-                print("{}→{}".format(genom[i-1], 0))
+                # print("{}→{}".format(genom[i-1], 0))
             route_flag = False
-            print("_{}_区切り".format(genom[i]))
+            # print("_{}_区切り".format(genom[i]))
         else : # ルート区切り番号ではない場合(避難所番号)
 
             # 現在参照している避難所番号の前が区切り番号だった，
@@ -123,39 +123,34 @@ def createEdgeMatrix(ga):
             if route_flag == False:
                 x[0][genom[i]] = 1
                 route_flag = True
-                print("{}→{}".format(0, genom[i]))
+                # print("{}→{}".format(0, genom[i]))
             else : # フラグがTrue，つまり経路続行
                 x[genom[i-1]][genom[i]] = 1
-                print("{}→{}".format(genom[i-1], genom[i]))
+                # print("{}→{}".format(genom[i-1], genom[i]))
     # 遺伝子の最後の番号が区切り番号でない場合，
     if route_flag == True:
         x[genom[i]][0] = 1
-        print("{}→{}".format(genom[i], 0))
+        # print("{}→{}".format(genom[i], 0))
 
     #総移動コストの計算
     for i in range(num_shelter):
         for j in range(num_shelter):
             total_cost += cost[i][j] * x[i][j]
 
-    print("総移動コスト:{}".format(total_cost))
+    # print("総移動コスト:{}".format(total_cost))
     # 総移動コストと，移動エッジ行列を返す
     return x
 
-# """
-# 【エリート選択】
-# 評価値が優れている順にソートを行った後，
-# 一定以上の遺伝子を抽出する
-# @INPUT:
-#     ga : 選択を行うgenomClassの配列
-#     elite : 遺伝子選択数
-# @OUTPUT:
-#     選択処理をした一定のエリートgenomClass
-# """
-# def select(ga, elite):
-#     # 現行世代個体集団の評価値を高い順にソートする
-#     sort_result = sorted(ga, reverse=True, key=lambda u: u.evaluation)
-#     # 一定の上位を抽出する
-#     result = []
+"""
+【家族内淘汰】
+親P_Aとその子の中から一番良い個体を選択する
+@INPUT:
+    ga : 選択を行うgenomClassの配列
+@OUTPUT:
+    選択処理をした一定のエリートgenomClass
+"""
+def select(ga, elite):
+    pass
 
 
 """
@@ -200,26 +195,20 @@ def preEAX(P_A, P_B):
             if(x_B[i][j] == 1 or x_B[j][i] == 1):
                 E_B.append([i, j])
 
-    # 一旦集合演算できるようにsetに変換
-    A = set(map(tuple, E_A))
-    B = set(map(tuple, E_B))
-    # A, Bの和集合から，A, Bの共通要素を排除
-    AB = A.union(B).difference(A.intersection(B))
-
-    # リスト型に戻しソート
-    edgelist = sorted(list(AB))
+    # G_ABを生成
+    edgelist = sorted([x for x in E_A + E_B if not (x in E_A and x in E_B)])
 
     for i in range(num_shelter):
         for j in range(i, num_shelter):
             for k, l in edgelist:
                 G_AB[k][l] = 1
 
-    print("x_A:")
-    print(x_A)
-    print("x_B:")
-    print(x_B)
-    print("G_AB:")
-    print(G_AB)
+    # print("x_A:")
+    # print(x_A)
+    # print("x_B:")
+    # print(x_B)
+    # print("G_AB:")
+    # print(G_AB)
 
 
 
@@ -253,7 +242,6 @@ if __name__ == '__main__':
     for count_ in range(1, MAX_GENERATION + 1):
         #集団中の個体をランダムな順列に並べる
         order = setRondomOrder()
-        print("ランダムな順列" + str(order))
 
         # 現行の集団中の個体全てのエッジ情報をgenomClassに保存
         for i in range(MAX_GENOM_LIST):
@@ -274,9 +262,8 @@ if __name__ == '__main__':
                 # print("P_B:{}".format(P_B))
 
             # EAXのステップ1~2を処理する
-            print("【{}】ペア目の親".format(i))
+            # print("【{}】ペア目の親".format(i))
             preEAX(P_A, P_B)
-
             # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
             for j in range(MAX_CHILDREN):
                 edgeAssemblyCrossover() #GAクラスに子個体情報も持たせる

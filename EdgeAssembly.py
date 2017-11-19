@@ -150,21 +150,16 @@ def EAX(x_A, x_B):
             if(x_B[i][j] == 1 or x_B[j][i] == 1):
                 E_B.append([i, j])
 
-    A = set(map(tuple, E_A))
-    B = set(map(tuple, E_B))
-    # .union:論理和
-    # .difference:論理差
-    # .intersection:論理積
-    AB = A.union(B).difference(A.intersection(B))
+    # G_ABを作成
+    edgelist = sorted([x for x in E_A + E_B if not (x in E_A and x in E_B)])
 
-    edgelist = sorted(list(AB))
-
+    # これいる？
     G_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
     for i in range(num_shelter):
         for j in range(i, num_shelter):
             for k, l in edgelist:
                 G_AB[k][l] = 1
-    # print(edgelist)
+
     # print(E_A)
     # print(E_B)
     # return G_AB, edgelist
@@ -195,10 +190,7 @@ def EAX(x_A, x_B):
     e = random.choice(list(filter(lambda x: v_e in x, R_A)))
     print("e:{}".format(e))
 
-
-    for n, i in enumerate(R_A):
-        if i == e:
-            del R_A[n]
+    R_A = [x for x in R_A if x != e]
     print("R_A after:{}".format(R_A))
 
     s += 1
