@@ -96,6 +96,9 @@ def createList():
     P_A = [6, 5, 8, 7, 11, 10, 1, 9, 3, 12, 4, 2]
     P_B = [2, 6, 5, 8, 12, 7, 10, 1, 9, 11, 3, 4]
 
+    # P_A = [6, 5, 10, 7, 11, 8, 12, 3, 9, 1, 4, 2]
+    # P_B = [2, 6, 12, 8, 5, 7, 10, 1, 9, 11, 3, 4]
+
     return P_A, P_B
 
 def createEdge(Parent):
@@ -138,7 +141,7 @@ def createEdge(Parent):
 
 
 def EAX(x_A, x_B):
-    G_AB = []
+    x_AB = []
     E_A = []
     E_B = []
     AB_cycle = []
@@ -150,15 +153,25 @@ def EAX(x_A, x_B):
             if(x_B[i][j] == 1 or x_B[j][i] == 1):
                 E_B.append([i, j])
 
+    # エッジの向きまで考慮
+    # for i in range(num_shelter):
+    #     for j in range(num_shelter):
+    #         if(x_A[i][j] == 1):
+    #             E_A.append([i, j])
+    #         if(x_B[i][j] == 1):
+    #             E_B.append([i, j])
+    print(E_A)
+    print(E_B)
     # G_ABを作成
-    edgelist = sorted([x for x in E_A + E_B if not (x in E_A and x in E_B)])
+    G_AB = sorted([x for x in E_A + E_B if not (x in E_A and x in E_B)])
+    print("G_AB:{}".format(G_AB))
 
     # これいる？
-    G_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
-    for i in range(num_shelter):
-        for j in range(i, num_shelter):
-            for k, l in edgelist:
-                G_AB[k][l] = 1
+    # x_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
+    # for i in range(num_shelter):
+    #     for j in range(i, num_shelter):
+    #         for k, l in edgelist:
+    #             x_AB[k][l] = 1
 
     # print(E_A)
     # print(E_B)
@@ -169,47 +182,61 @@ def EAX(x_A, x_B):
     """
     i = 0
     s = 0
-    R_A = E_A
-    R_B = E_B
+    R_A = sorted([x for x in G_AB if (x and x in E_A)])
+    R_B = sorted([x for x in G_AB if (x and x in E_B)])
     P = [0]
-
+    C = []
     print("R_A:{}".format(R_A))
     print("R_B:{}".format(R_B))
 
+    while(len(G_AB)):
+        ABflag = False
+        v_e = random.choice(np.unique(R_A))
+        print("v_e:{}".format(v_e))
+        v_e_1 = v_e # 最初の端点を保持する
+        while (not(ABflag)):
+            if(P[s] in R_B or s == 0):
+                R_A = sorted([x for x in R_A if (x and x in G_AB)])
+                # 上で選択したノードv_eにつながるR_Aのエッジをeにセットする
+                e = random.choice(list(filter(lambda x: v_e in x, R_A)))
+                print("e:{}".format(e))
+                G_AB = [x for x in G_AB if x != e]
+                print("G_AB:{}".format(G_AB))
+            else:
+                R_B = sorted([x for x in R_B if (x and x in G_AB)])
+                # 上で選択したノードv_eにつながるR_Bのエッジをeにセットする
+                e = random.choice(list(filter(lambda x: v_e in x, R_B)))
+                print("e:{}".format(e))
+                G_AB = [x for x in G_AB if x != e]
+                print("G_AB:{}".format(G_AB))
+            # eの端点のv_eでない方を新たにv_eとする
+            v_e = e[0] if v_e == e[1] else e[1]
+            print("次の端点:{}".format(v_e))
+            s += 1
+            P.append(e)
+            # print("s:{}".format(s))
+            # print("P[s]:{}".format(P))
 
-    node = np.unique(R_A) # R_A中のエッジが接続しているノード
+            # PがAB-cycleを含んでいるか判定
+            if(isRoute(P[1:], v_e_1, v_e)):
+                C.append(P[1:])
+                P = [0]
+                s = 0
+                R_A = sorted([x for x in R_A if (x and x in G_AB)])
+                ABflag = True
+                print("C:{}".format(C))
 
-    print("node:{}".format(node))
-    delta_A = len(node) #delta_Aは，ノードに接続するR_Aのエッジの数
-    # print(delta_A)
-    # while delta_A != 0:
-    v_e = random.choice(node)
-    print("v_e:{}".format(v_e))
-
-    # 上で選択したノードv_eにつながるR_Aのエッジをeにセットする
-    e = random.choice(list(filter(lambda x: v_e in x, R_A)))
-    print("e:{}".format(e))
-
-    R_A = [x for x in R_A if x != e]
-    print("R_A after:{}".format(R_A))
-
-    s += 1
-    P.append(e)
-    print("s:{}".format(s))
-    print("P[s]:{}".format(P))
+    for i, x in enumerate(C):
+        print("C{}:{}".format(i, x))
 
 
-
-
-
-        #ここにwhile
-        # if P[s] in E_B or s == 0:
-        #     e = filter
-
-
-
-
-        # print(delta_A)
+def isRoute(edgeList, v_e_1, v_e):
+    # エッジリストの長さが偶数かどうか
+    if len(edgeList) % 2 == 0:
+        if v_e_1 == v_e:
+            return 1
+    else:
+        return 0
 
 
 

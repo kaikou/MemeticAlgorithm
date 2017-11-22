@@ -19,9 +19,9 @@ import pandas as pd
 # 遺伝子情報の長さ
 GENOM_LENGTH = 50
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 5
+MAX_GENOM_LIST = 2
 # 各両親から生成される子個体の数
-MAX_CHILDREN = 10
+MAX_CHILDREN = 1
 # 遺伝子選択数
 SELECT_GENOM = 20
 # 個体突然変異確率
@@ -168,6 +168,24 @@ def setRondomOrder():
     return(random_order)
 
 """
+与えたれたエッジのリストが閉路を満たすかを判定する
+@INPUT:
+    edgeList : エッジのリスト
+    v_e : 最後に格納したエッジの端点
+@OUTPUT:
+    1 : 満たす
+    0 : 満たさない
+"""
+def isRoute(edgeList, v_e_1, v_e):
+    # エッジリストの長さが偶数かどうか
+    if len(edgeList) % 2 == 0:
+        if v_e_1 == v_e:
+            return 1
+    else:
+        return 0
+
+
+"""
 EAXのステップ1と2を処理する関数
 ステップ1: G_AB集合を生成する
 ステップ2: AB-cycleによる閉路を生成する
@@ -183,9 +201,7 @@ def preEAX(P_A, P_B):
     E_B = [] #親Bのエッジを格納するリスト
     x_A = P_A.getEdge() # 親Aの遺伝子リストを取得
     x_B = P_B.getEdge() # 親Bの遺伝子リストを取得
-    G_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
-    edgelist = [] #集合型からリスト型に戻す時に格納するリスト
-    AB_cycle = []
+    x_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
 
     # エッジがある行列番号をE_A[]とE_B[]に追加
     for i in range(num_shelter):
@@ -195,21 +211,68 @@ def preEAX(P_A, P_B):
             if(x_B[i][j] == 1 or x_B[j][i] == 1):
                 E_B.append([i, j])
 
-    # G_ABを生成
-    edgelist = sorted([x for x in E_A + E_B if not (x in E_A and x in E_B)])
-
-    for i in range(num_shelter):
-        for j in range(i, num_shelter):
-            for k, l in edgelist:
-                G_AB[k][l] = 1
-
-    # print("x_A:")
-    # print(x_A)
-    # print("x_B:")
-    # print(x_B)
-    # print("G_AB:")
+    """
+    ステップ1: 親Aと親Bから集合G_ABを生成する
+    """
+    G_AB = sorted([x for x in E_A + E_B if not (x in E_A and x in E_B)])
     # print(G_AB)
+    """
+    ステップ2: G_AB上でAB-cycleを構築する
+    """
+    i = 0
+    s = 0
+    R_A = sorted([x for x in G_AB if (x and x in E_A)])
+    R_B = sorted([x for x in G_AB if (x and x in E_B)])
 
+    print("G_AB:{}".format(G_AB))
+    print("R_A:{}".format(R_A))
+    print("R_B:{}".format(R_B))
+
+    # G_AB = [[0, 6], [0, 8], [0, 9], [0, 10], [2, 4], [2, 6], [3, 4], [3, 9], [7, 8], [7, 10]]
+    # R_A = [[0, 6], [0, 10], [2, 4], [3, 9], [7, 8]]
+    # R_B = [[0, 8], [0, 9], [2, 6], [3, 4], [7, 10]]
+    P = [0]
+    C = []
+
+    while(len(G_AB)):
+        # 次の閉路を探索するためにフラグを初期化
+        ABflag = False
+        # G_AB上のE_Aによるエッジが繋がるノードをランダムに選択する
+        v_e = random.choice(np.unique(R_A))
+        v_e_1 = v_e #最初の端点を保持する
+        print("端点:{}".format(v_e))
+        while (not(ABflag)):
+            if(P[s] in R_B or s == 0):
+                # 上で選択したノードv_eにつながるR_Aのエッジをeにセットする
+                R_A = sorted([x for x in R_A if (x and x in G_AB)])
+                e = random.choice(list(filter(lambda x: v_e in x, R_A)))
+                print("e:{}".format(e))
+                # G_ABから上で選択したエッジを取り除く
+                G_AB = [x for x in G_AB if x != e]
+                print("eを除いたG_AB:{}".format(G_AB))
+            else:
+                R_B = sorted([x for x in R_B if (x and x in G_AB)])
+                e = random.choice(list(filter(lambda x: v_e in x, R_B)))
+                print("e:{}".format(e))
+                G_AB = [x for x in G_AB if x != e]
+                print("eを除いたG_AB:{}".format(G_AB))
+            # eの端点のv_eでない方を新たにv_eとする
+            v_e = e[0] if v_e == e[1] else e[1]
+            print("次の端点:{}".format(v_e))
+            s += 1
+            # 配列Pにエッジを加える
+            P.append(e)
+
+            # PがAB-cycleを含んでいるか判定
+            if(isRoute(P[1:], v_e_1, v_e)):
+                C.append(P[1:])
+                P = [0]
+                s = 0
+                R_A = sorted([x for x in R_A if (x and x in G_AB)])
+                ABflag = True
+                print("C:{}".format(C))
+    for i, x in enumerate(C):
+        print("C{}:{}".format(i, x))
 
 
 def edgeAssemblyCrossover():
@@ -253,16 +316,11 @@ if __name__ == '__main__':
             if i < MAX_GENOM_LIST -1:
                 P_A = current_generation_individual_group[order[i]]
                 P_B = current_generation_individual_group[order[i+1]]
-                # print("P_A:{}".format(P_A))
-                # print("P_B:{}".format(P_B))
             else:
                 P_A = current_generation_individual_group[order[i]]
                 P_B = current_generation_individual_group[order[0]]
-                # print("P_A:{}".format(P_A))
-                # print("P_B:{}".format(P_B))
 
             # EAXのステップ1~2を処理する
-            # print("【{}】ペア目の親".format(i))
             preEAX(P_A, P_B)
             # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
             for j in range(MAX_CHILDREN):
