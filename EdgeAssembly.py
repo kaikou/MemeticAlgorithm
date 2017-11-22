@@ -96,8 +96,8 @@ def createList():
     P_A = [6, 5, 8, 7, 11, 10, 1, 9, 3, 12, 4, 2]
     P_B = [2, 6, 5, 8, 12, 7, 10, 1, 9, 11, 3, 4]
 
-    # P_A = [6, 5, 10, 7, 11, 8, 12, 3, 9, 1, 4, 2]
-    # P_B = [2, 6, 12, 8, 5, 7, 10, 1, 9, 11, 3, 4]
+    # P_A = [6, 5, 8, 7, 11, 10, 1, 9, 12, 3, 4, 2]
+    # P_B = [6, 5, 8, 7, 10, 11, 12, 1, 9, 3, 4, 2]
 
     return P_A, P_B
 
@@ -152,7 +152,6 @@ def EAX(x_A, x_B):
                 E_A.append([i, j])
             if(x_B[i][j] == 1 or x_B[j][i] == 1):
                 E_B.append([i, j])
-
     # エッジの向きまで考慮
     # for i in range(num_shelter):
     #     for j in range(num_shelter):
@@ -170,7 +169,7 @@ def EAX(x_A, x_B):
     # x_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
     # for i in range(num_shelter):
     #     for j in range(i, num_shelter):
-    #         for k, l in edgelist:
+    #         for k, l in G_AB:
     #             x_AB[k][l] = 1
 
     # print(E_A)
@@ -188,6 +187,9 @@ def EAX(x_A, x_B):
     C = []
     print("R_A:{}".format(R_A))
     print("R_B:{}".format(R_B))
+    print("R_Aの長さ:{}".format(len(R_A)))
+    print("R_Aの長さ:{}".format(len(R_B)))
+
 
     while(len(G_AB)):
         ABflag = False
@@ -225,6 +227,8 @@ def EAX(x_A, x_B):
                 R_A = sorted([x for x in R_A if (x and x in G_AB)])
                 ABflag = True
                 print("C:{}".format(C))
+                # if(len(R_A) % 2 == 1 or len(R_B) % 2 == 1):
+                #     break
 
     for i, x in enumerate(C):
         print("C{}:{}".format(i, x))
