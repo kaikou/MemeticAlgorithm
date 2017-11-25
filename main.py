@@ -16,20 +16,20 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 
-# 遺伝子情報の長さ
-GENOM_LENGTH = 50
+# # 遺伝子情報の長さ
+# GENOM_LENGTH = 50
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 2
+MAX_GENOM_LIST = 20
 # 各両親から生成される子個体の数
-MAX_CHILDREN = 1
-# 遺伝子選択数
-SELECT_GENOM = 20
-# 個体突然変異確率
-INDIVIDUAL_MUTATION = 0.1
-# 遺伝子突然変異確率
-GENOM_MUTATION = 0.1
+MAX_CHILDREN = 10
+# # 遺伝子選択数
+# SELECT_GENOM = 20
+# # 個体突然変異確率
+# INDIVIDUAL_MUTATION = 0.1
+# # 遺伝子突然変異確率
+# GENOM_MUTATION = 0.1
 # 繰り返す世代数
-MAX_GENERATION = 2
+MAX_GENERATION = 30
 # 使用できる車両数
 VEHICLE = 3
 
@@ -101,9 +101,9 @@ def createGenom(num_shelter, m):
 @OUTPUT:
     x : 移動するエッジの行列
 """
-def createEdgeMatrix(ga):
+def createEdgeMatrix(genom):
     # 配送順序の配列を変数genomにコピー
-    genom = ga.getGenom()
+    # genom = ga.getGenom()
     total_cost = 0
     route_flag = False
     # どの避難所間を通ったかを示す2次元配列を0で初期化
@@ -139,7 +139,7 @@ def createEdgeMatrix(ga):
 
     # print("総移動コスト:{}".format(total_cost))
     # 総移動コストと，移動エッジ行列を返す
-    return x
+    return x, total_cost
 
 """
 【家族内淘汰】
@@ -166,6 +166,37 @@ def setRondomOrder():
     random_order = [i for i in range(MAX_GENOM_LIST)]
     random.shuffle(random_order)
     return(random_order)
+
+"""
+テストも兼ねて作ったOX関数
+ランダムに選んだ2点間で順列交叉をする
+@INPUT:
+    P_A: 親AのgenomClass
+    P_B: 親BのgenomClass
+@OUTPUT:
+    c: 交叉によって生成した子の順列
+"""
+def orderCrossover(P_A, P_B):
+    P_A = P_A.getGenom()
+    P_B = P_B.getGenom()
+
+    index1 = random.randint(1, len(P_A) - 1)
+    index2 = random.randint(1, len(P_A) - 1)
+    # 同じ数字を許容しない
+    if index1 == index2:
+        while(index1 == index2):
+            index2 = random.randint(1, len(P_A))
+
+    # index1がindex2より小さい値になるように交換
+    if index1 > index2:
+        index1, index2 = index2, index1
+
+    c_A = P_A[index1:index2]
+    c_B = [x for x in P_B if not x in c_A]
+    c = c_B[:index1] + c_A[:] + c_B[index1:]
+
+    return c
+
 
 """
 与えたれたエッジのリストが閉路を満たすかを判定する
@@ -199,8 +230,8 @@ EAXのステップ1と2を処理する関数
 def preEAX(P_A, P_B):
     E_A = [] #親Aのエッジを格納するリスト
     E_B = [] #親Bのエッジを格納するリスト
-    x_A = P_A.getEdge() # 親Aの遺伝子リストを取得
-    x_B = P_B.getEdge() # 親Bの遺伝子リストを取得
+    x_A = P_A.getEdge() # 親Aのエッジリストを取得
+    x_B = P_B.getEdge() # 親Bのエッジリストを取得
     x_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
 
     # エッジがある行列番号をE_A[]とE_B[]に追加
@@ -271,8 +302,7 @@ def preEAX(P_A, P_B):
                 R_A = sorted([x for x in R_A if (x and x in G_AB)])
                 ABflag = True
                 print("C:{}".format(C))
-    for i, x in enumerate(C):
-        print("C{}:{}".format(i, x))
+    return C # AB-cycleのリストを返す
 
 
 def edgeAssemblyCrossover():
@@ -285,8 +315,8 @@ if __name__ == '__main__':
     # 避難所情報のデータフレームを生成する
     # 引数[0]:ファイルパス，[1]:ファイル名
     df = createDataFrame("./data/", "data_r101")
-    #num_shelter = len(df.index)
-    num_shelter = 11
+    num_shelter = len(df.index)
+    # num_shelter = 11
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -308,8 +338,9 @@ if __name__ == '__main__':
 
         # 現行の集団中の個体全てのエッジ情報をgenomClassに保存
         for i in range(MAX_GENOM_LIST):
-            x = createEdgeMatrix(current_generation_individual_group[i])
+            x, total_cost = createEdgeMatrix(current_generation_individual_group[i].getGenom())
             current_generation_individual_group[i].setEdge(x)
+            current_generation_individual_group[i].setEvaluation(total_cost)
 
         for i in range(MAX_GENOM_LIST):
             # 集団中の全ての個体が丁度一度ずつ親P_Aとして選択される
@@ -320,11 +351,32 @@ if __name__ == '__main__':
                 P_A = current_generation_individual_group[order[i]]
                 P_B = current_generation_individual_group[order[0]]
 
-            # EAXのステップ1~2を処理する
-            preEAX(P_A, P_B)
+
+            """
+            orderCrossoverにてプログラム全体の処理確認
+            """
+            c = []
+            c_cost = []
             # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
             for j in range(MAX_CHILDREN):
-                edgeAssemblyCrossover() #GAクラスに子個体情報も持たせる
+                c.append(orderCrossover(P_A, P_B))
+                a, b = createEdgeMatrix(c[j]) # bがコスト
+                c_cost.append(b)
+
+            if min(c_cost) < P_A.getEvaluation():
+                min_idx = c_cost.index(min(c_cost))
+                current_generation_individual_group[order[i]].setGenom(c[min_idx])
+                current_generation_individual_group[order[i]].setEvaluation(c_cost[min_idx])
+
+
+            # EAXのステップ1~2を処理する
+            # C = preEAX(P_A, P_B)
+            # for i, x in enumerate(C):
+            #     print("C{}:{}".format(i, x))
+            #
+            # # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
+            # for j in range(MAX_CHILDREN):
+            #     edgeAssemblyCrossover() #GAクラスに子個体情報も持たせる
 
         """
         #現行世代個体集団の遺伝子を評価し，genomClassに代入
@@ -336,10 +388,15 @@ if __name__ == '__main__':
         # print(current_generation_individual_group[4].getEdge())
         """
 
-        # #遺伝子集団それぞれの評価値確認
-        # print("====第{}世代====".format(count_))
+        # 今世代の個体適用度を配列化する
+        fits = [i.getEvaluation() for i in current_generation_individual_group]
+        min_ = min(fits) # 最小値を求める
+
+        print("====第{}世代====".format(count_))
+        print("最も優れた個体の総移動コスト:{}".format(min_))
         # for i in range(MAX_GENOM_LIST):
         #     print("遺伝子<{}>:{}".format(i + 1, current_generation_individual_group[i].getEvaluation()))
 
-        #エリート個体を選択する
-        #elite_genes = select(current_generation_individual_group, SELECT_GENOM)
+    min_idx = fits.index(min(fits))
+    print("最も優れた個体:{}".format(current_generation_individual_group[min_idx].getGenom()))
+    print("最も優れた個体の総移動コスト:{}".format(min_))
