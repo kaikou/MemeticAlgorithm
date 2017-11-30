@@ -16,10 +16,8 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 
-# # 遺伝子情報の長さ
-# GENOM_LENGTH = 50
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 20
+MAX_GENOM_LIST = 30
 # 各両親から生成される子個体の数
 MAX_CHILDREN = 10
 # # 遺伝子選択数
@@ -311,12 +309,13 @@ def edgeAssemblyCrossover():
 
 
 if __name__ == '__main__':
-
+    filename = "data_r101"
     # 避難所情報のデータフレームを生成する
     # 引数[0]:ファイルパス，[1]:ファイル名
-    df = createDataFrame("./data/", "data_r101")
+    df = createDataFrame("./data/", filename)
     num_shelter = len(df.index)
     # num_shelter = 11
+    result_df = pd.DataFrame(index=[], columns=['世代', '総移動コスト'])
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -363,6 +362,8 @@ if __name__ == '__main__':
                 a, b = createEdgeMatrix(c[j]) # bがコスト
                 c_cost.append(b)
 
+            # 現在の親ペアの子の中で一番コストの低い個体が親Aよりも
+            # 環境に適合している場合，親Aのインデックスを指定して入れ替える
             if min(c_cost) < P_A.getEvaluation():
                 min_idx = c_cost.index(min(c_cost))
                 current_generation_individual_group[order[i]].setGenom(c[min_idx])
@@ -392,11 +393,17 @@ if __name__ == '__main__':
         fits = [i.getEvaluation() for i in current_generation_individual_group]
         min_ = min(fits) # 最小値を求める
 
+        # データフレームの行を世代によって更新
+        series = pd.Series([count_, min_], index=result_df.columns)
+        result_df = result_df.append(series, ignore_index = True)
+
         print("====第{}世代====".format(count_))
         print("最も優れた個体の総移動コスト:{}".format(min_))
         # for i in range(MAX_GENOM_LIST):
         #     print("遺伝子<{}>:{}".format(i + 1, current_generation_individual_group[i].getEvaluation()))
 
     min_idx = fits.index(min(fits))
+    print(result_df)
     print("最も優れた個体:{}".format(current_generation_individual_group[min_idx].getGenom()))
     print("最も優れた個体の総移動コスト:{}".format(min_))
+    result_df.to_csv("./output/" + filename + "_result.csv", index=False)

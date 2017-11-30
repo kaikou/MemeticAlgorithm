@@ -13,3 +13,7 @@ MemeticAlgorithm
 > main.py : メメティックアルゴリズムを実行させるプログラム
 
 > GeneticAlgorithm.py : 遺伝子情報とその遺伝子の評価値を格納するクラス
+
+> EdgeAssembly.py：EAXの実装テスト用ファイル
+
+> graphPlot.py：./outputフォルダ内にあるcsvファイル内容をプロットする
