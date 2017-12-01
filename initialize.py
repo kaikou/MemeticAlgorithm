@@ -9,6 +9,8 @@ import random
 from decimal import Decimal
 import numpy as np
 import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
 
 # # 遺伝子情報の長さ
 # GENOM_LENGTH = 50
@@ -72,65 +74,39 @@ def createCostMatrix(num_shelter):
     return arr
 
 
-def isNearDepot(edge, x):
-    if x[edge[0]][0] or x[0][edge[0]]:
-        if x[edge[1]][0] or x[0][edge[1]]:
-            return 1
-    return 0
+"""
+セービング法によりヒューリスティックな解を生成する
+@INPUT:
+    num_shelter : 避難所数
+    cost : 避難所間のコスト行列
+@OUTPUT:
 
-
-
+"""
 def savingMethod(num_shelter, cost):
-    print(cost)
-    saving = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
-    # s_x = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
-    # s_arr = np.empty((0, 3), int)
+    """
+    各避難所間のコストからセービング値を計算
+    経路結合のための初期化をする
+    """
     s = np.zeros((num_shelter, num_shelter), int)
-    # route_flag = False
-    # selected = []
-
     q = np.zeros((num_shelter), int)
     nex = np.zeros((num_shelter), int)
     tail = np.zeros((num_shelter), int)
     dr = np.zeros((num_shelter), int)
 
     for i in range(1, num_shelter):
-        # s_x[0][i] = 1
-        # s_x[i][0] = 1
-
         q[i] = df.ix[i].d
         nex[i] = 0
         tail[i] = i
         dr[i] = cost[0][i] + cost[i][0]
 
-
-    """
-    セービングファイルを作成する
-    s_arrは，
-
-    [i  j  s]
-    [i  j  s]
-    ......
-    という構造になっており，
-    i-j間のセービング値がsであり，sについて降順にソートしている
-    """
-    # for i in range(1, num_shelter):
-    #     for j in range(i+1, num_shelter):
-    #         saving[i][j] = cost[i][0] + cost[0][j] - cost[i][j]
-    #         if saving[i][j] > 0:
-    #             s_arr = np.append(s_arr, np.array([[i, j, saving[i][j]]]), axis=0)
-    # s_arr = s_arr[s_arr[:, 2].argsort()][::-1]
-    # # print(saving)
-    # print(s_arr)
-
     for i in range(1, num_shelter):
-        for j in range(i, num_shelter):
-            saving[i][j] = cost[i][0] + cost[0][j] - cost[i][j]
-            s[i][j] = saving[i][j]
-    # print(saving)
+        for j in range(i+1, num_shelter):
+            s[i][j] = cost[i][0] + cost[0][j] - cost[i][j]
     print(s)
 
-
+    """
+    経路の結合処理
+    """
     smax = 1
     while(smax != 0):
         smax = 0
@@ -150,12 +126,13 @@ def savingMethod(num_shelter, cost):
             q[g] = q[g] + q[h]
             q[h] = 0
 
-    print(nex)
-
-
+    """
+    経路の出力
+    """
     route = []
     heiro = []
-
+    demand = []
+    distance = []
     drt = 0
     for i in range(1, num_shelter):
         if q[i] > 0:
@@ -164,16 +141,124 @@ def savingMethod(num_shelter, cost):
                 heiro.append(ii)
                 ii = nex[ii]
                 if ii == 0:
-                    heiro.append(dr[i]) # その経路の移動コスト
-                    heiro.append(q[i]) # その経路の総需要
+                    distance.append(dr[i]) # その経路の移動コスト
+                    demand.append(q[i]) # その経路の総需要
                     drt += dr[i]
                     route.append(heiro)
                     heiro = []
                     break
 
     print(route)
+    print(demand)
+    print(distance)
+    print(drt)
+    return route
 
 
+    """
+    セービングファイルを作成する
+    s_arrは，
+
+    [i  j  s]
+    [i  j  s]
+    ......
+    という構造になっており，
+    i-j間のセービング値がsであり，sについて降順にソートしている
+    """
+    # s_x = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
+    # s_arr = np.empty((0, 3), int)
+    #
+    # for i in range(1, num_shelter):
+    #     for j in range(i+1, num_shelter):
+    #         saving[i][j] = cost[i][0] + cost[0][j] - cost[i][j]
+    #         if saving[i][j] > 0:
+    #             s_arr = np.append(s_arr, np.array([[i, j, saving[i][j]]]), axis=0)
+    # s_arr = s_arr[s_arr[:, 2].argsort()][::-1]
+    # # print(saving)
+    # print(s_arr)
+
+
+
+"""
+グラフのリストを作成する
+@INPUT:
+    None
+@OUTPUT:
+    X:
+    Y:
+    N:
+    pos:
+    G:
+"""
+def createGraphList():
+    X = []
+    Y = []
+    N = []
+    G = nx.Graph()
+    pos = {}  #ノードの位置情報格納
+
+    # # デポ以外の座標を代入
+    # for i in range(num_shelter):
+    #     X.append(df.ix[i].x)
+    #     Y.append(df.ix[i].y)
+
+    # ノード番号とノードの座標を格納
+    for i in range(num_shelter):
+        N.append(i)
+        pos[i] = (df.ix[i].x, df.ix[i].y)
+
+    return(X, Y, N, pos, G)
+
+
+
+"""
+グラフをプロットする
+"""
+def graphPlot(G, N, e):
+    E = []
+    edge_labels = {}
+    sum_cost = 0
+    labels = {}
+
+    # for i in range(num_shelter):
+    #     for j in range(num_shelter):
+    #         if(x[i][j] == 1):
+    #             E.append((i, j))
+    #             edge_labels[(i, j)] = cost[i][j]
+
+    for edge in e:
+        for i, node in enumerate(edge):
+            if i == 0:
+                E.append([0, node])
+                pre_node = node
+            else:
+                E.append([pre_node, node])
+                pre_node = node
+                if i == len(edge)-1:
+                    E.append([node, 0])
+
+    for i in range(num_shelter):
+        # labels[i] = df.ix[i].d
+        labels[i] = i
+
+    G.add_nodes_from(N)
+    G.add_edges_from(E)
+    nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=200)
+    nx.draw_networkx_labels(G, pos, labels, font_size=12)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
+
+    plt.legend()
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.xlim(0, 70)
+    plt.ylim(0, 70)
+    # plt.axis('off')
+    plt.title('Delivery route')
+    plt.savefig("./output/cvrp.png")  # save as png
+    plt.grid()
+    plt.show()
+
+    return(0)
 
 
 if __name__ == "__main__":
@@ -181,7 +266,7 @@ if __name__ == "__main__":
 
     df = createDataFrame("./data/", filename)
     # num_shelter = len(df.index)
-    num_shelter = 11
+    num_shelter = 31
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -190,4 +275,7 @@ if __name__ == "__main__":
     print(df[:11])
     # print(cost)
 
-    savingMethod(num_shelter, cost)
+    route = savingMethod(num_shelter, cost)
+
+    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    graphPlot(G, N, route)
