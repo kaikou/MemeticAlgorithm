@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
+import time
 
 # # 遺伝子情報の長さ
 # GENOM_LENGTH = 50
@@ -29,7 +30,7 @@ MAX_GENERATION = 30
 # 使用できる車両数
 VEHICLE = 3
 # 車両の最大積載量
-CAPACITY = 40
+CAPACITY = 200
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 
@@ -292,9 +293,9 @@ def graphPlot(G, N, e):
     print(E)
     G.add_nodes_from(N)
     G.add_edges_from(E)
-    nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=200)
-    nx.draw_networkx_labels(G, pos, labels, font_size=12)
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
+    nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=20) # デフォルト200
+    nx.draw_networkx_labels(G, pos, labels, font_size=6) # デフォルト12
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
 
     plt.legend()
     plt.xlabel("x")
@@ -303,7 +304,7 @@ def graphPlot(G, N, e):
     plt.ylim(0, 70)
     # plt.axis('off')
     plt.title('Delivery route')
-    plt.savefig("./output/cvrp.png")  # save as png
+    plt.savefig("./output/" + filename +".png")  # save as png
     # plt.grid()
     plt.show()
 
@@ -311,11 +312,11 @@ def graphPlot(G, N, e):
 
 
 if __name__ == "__main__":
-    filename = "data_r101"
+    filename = "R101"
 
-    df = createDataFrame("./data/", filename)
-    # num_shelter = len(df.index)
-    num_shelter = 11
+    df = createDataFrame("./csv/", filename)
+    num_shelter = len(df.index)
+    num_shelter = 31
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -324,22 +325,15 @@ if __name__ == "__main__":
     print(df[:11])
     # print(cost)
 
+    start = time.time()
     route = savingMethod(num_shelter, cost)
+    elapsed_time = time.time() - start
+    print("計算時間：" + str(elapsed_time) + "[sec]")
+
     print("ルート数：{}".format(len(route)))
 
-    path = createEdgeSet(route)
+    # path = createEdgeSet(route)
 
 
-
-    # lineCount = 0
-    # readfile = './data/solomon_25/C101.txt'
-    # for line in open(readfile, "r"):
-    #     lineCount += 1
-    #     if lineCount < 10:
-    #         continue
-    #     print(line.strip())
-        # print(line)
-
-
-    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    # graphPlot(G, N, route)
+    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    graphPlot(G, N, route)

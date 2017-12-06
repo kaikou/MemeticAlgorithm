@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#
+# ベンチマークのtxtファイルをcsvファイルに変換するプログラム
 # Created by Kohei Kai(2017)
 
 import csv
@@ -53,4 +53,4 @@ def txt2csv(filepath, filename):
 
 
 if __name__ == '__main__':
-    txt2csv("./data/solomon_100/", "C101")
+    txt2csv("./data/solomon_100/", "101")
