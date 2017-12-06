@@ -188,32 +188,32 @@ def EAX(x_A, x_B):
     print("R_A:{}".format(R_A))
     print("R_B:{}".format(R_B))
     print("R_Aの長さ:{}".format(len(R_A)))
-    print("R_Aの長さ:{}".format(len(R_B)))
+    print("R_Bの長さ:{}".format(len(R_B)))
 
 
     while(len(G_AB)):
         ABflag = False
         v_e = random.choice(np.unique(R_A))
-        print("v_e:{}".format(v_e))
+        # print("v_e:{}".format(v_e))
         v_e_1 = v_e # 最初の端点を保持する
         while (not(ABflag)):
             if(P[s] in R_B or s == 0):
                 R_A = sorted([x for x in R_A if (x and x in G_AB)])
                 # 上で選択したノードv_eにつながるR_Aのエッジをeにセットする
                 e = random.choice(list(filter(lambda x: v_e in x, R_A)))
-                print("e:{}".format(e))
+                # print("e:{}".format(e))
                 G_AB = [x for x in G_AB if x != e]
-                print("G_AB:{}".format(G_AB))
+                # print("G_AB:{}".format(G_AB))
             else:
                 R_B = sorted([x for x in R_B if (x and x in G_AB)])
                 # 上で選択したノードv_eにつながるR_Bのエッジをeにセットする
                 e = random.choice(list(filter(lambda x: v_e in x, R_B)))
-                print("e:{}".format(e))
+                # print("e:{}".format(e))
                 G_AB = [x for x in G_AB if x != e]
-                print("G_AB:{}".format(G_AB))
+                # print("G_AB:{}".format(G_AB))
             # eの端点のv_eでない方を新たにv_eとする
             v_e = e[0] if v_e == e[1] else e[1]
-            print("次の端点:{}".format(v_e))
+            # print("次の端点:{}".format(v_e))
             s += 1
             P.append(e)
             # print("s:{}".format(s))
@@ -226,12 +226,24 @@ def EAX(x_A, x_B):
                 s = 0
                 R_A = sorted([x for x in R_A if (x and x in G_AB)])
                 ABflag = True
-                print("C:{}".format(C))
+                # print("C:{}".format(C))
                 # if(len(R_A) % 2 == 1 or len(R_B) % 2 == 1):
                 #     break
 
     for i, x in enumerate(C):
         print("C{}:{}".format(i, x))
+
+    E_set = random.choice(C) # Single戦略
+    print("E-set:{}".format(E_set))
+
+    # E_AからE-setに含まれるE_Aに属する枝を取り除く
+    interA = [x for x in E_A if not(x and x in E_set)]
+    # E-setに含まれるE_Bに属する枝を付け加える
+    interB = [x for x in E_B if (x and x in E_set)]
+    intermediate = interA + interB
+
+    print("中間:{}".format(intermediate))
+    return intermediate
 
 
 def isRoute(edgeList, v_e_1, v_e):
@@ -258,13 +270,14 @@ def graphPlot(G, N, x):
         for j in range(num_shelter):
             if(x[i][j] == 1):
                 E.append((i, j))
-                edge_labels[(i, j)] = cost[i][j]
+                # edge_labels[(i, j)] = cost[i][j]
 
     for i in range(num_shelter):
         # labels[i] = df.ix[i].d
         labels[i] = i
 
 
+    E = intermediate
     G.add_nodes_from(N)
     G.add_edges_from(E)
     nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=200)
@@ -310,13 +323,13 @@ if __name__ == '__main__':
     print("Bの総移動コスト:{}".format(total_cost_B))
 
     # G_AB, edgelist = EAX(x_A, x_B)
-    EAX(x_A, x_B)
+    intermediate = EAX(x_A, x_B)
     # print(G_AB)
     # print(edgelist)
 
     # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
     # graphPlot(G, N, G_AB)
-    # X, Y, N, pos, G = createGraphList()
-    # graphPlot(G, N, x_A)
+    X, Y, N, pos, G = createGraphList()
+    graphPlot(G, N, x_A)
     # X, Y, N, pos, G = createGraphList()
     # graphPlot(G, N, x_B)

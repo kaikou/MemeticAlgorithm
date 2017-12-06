@@ -335,5 +335,5 @@ if __name__ == "__main__":
     # path = createEdgeSet(route)
 
 
-    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, route)
+    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    # graphPlot(G, N, route)
