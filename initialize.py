@@ -30,6 +30,8 @@ MAX_GENERATION = 30
 VEHICLE = 3
 # 車両の最大積載量
 CAPACITY = 40
+# セービング値の効果をコントロールする係数
+LAMBDA = 1
 
 
 """
@@ -101,8 +103,8 @@ def savingMethod(num_shelter, cost):
 
     for i in range(1, num_shelter):
         for j in range(i+1, num_shelter):
-            s[i][j] = cost[i][0] + cost[0][j] - cost[i][j]
-    print(s)
+            s[i][j] = cost[i][0] + cost[0][j] - (LAMBDA * cost[i][j])
+    # print(s)
 
     """
     経路の結合処理
@@ -178,6 +180,46 @@ def savingMethod(num_shelter, cost):
     # print(s_arr)
 
 
+def createEdgeSet(route):
+    E = []
+    Path = []
+    for edge in route:
+        for i, node in enumerate(edge):
+            if i == 0:
+                E.append([0, node])
+                pre_node = node
+                if len(edge) == 1:
+                    E.append([node, 0])
+            else:
+                E.append([pre_node, node])
+                pre_node = node
+                if i == len(edge)-1:
+                    E.append([node, 0])
+        Path.append(E)
+        E = []
+    print(Path)
+    return Path
+
+"""
+あるノードから近いノード集合を返す
+引数nodeで与えたノードから，近くにあるノードをnear番目まで選んだ集合
+@INPUT:
+    node:ノード
+    near:近くのノードをいくつ探すか
+@OUTPUT:
+    near_cost:近くのノード集合
+"""
+def N_near(node, near):
+    near_cost = np.empty((0, 2), int)
+    for i, c in enumerate(cost[node][:]):
+        near_cost = np.append(near_cost, np.array([[i, c]]), axis=0)
+    near_cost = near_cost[near_cost[:, 1].argsort()] # nodeに近い順にソート
+
+    # print(near_cost[1:near+1, 0])
+    return near_cost[1:near+1, 0]
+
+
+
 
 """
 グラフのリストを作成する
@@ -230,17 +272,24 @@ def graphPlot(G, N, e):
         for i, node in enumerate(edge):
             if i == 0:
                 E.append([0, node])
+                edge_labels[(0, node)] = cost[0][node]
                 pre_node = node
+                if len(edge) == 1:
+                    E.append([node, 0])
+                    edge_labels[(node, 0)] = cost[node][0]
             else:
                 E.append([pre_node, node])
+                edge_labels[(pre_node, node)] = cost[pre_node][node]
                 pre_node = node
                 if i == len(edge)-1:
                     E.append([node, 0])
+                    edge_labels[(node, 0)] = cost[node][0]
 
     for i in range(num_shelter):
         # labels[i] = df.ix[i].d
         labels[i] = i
 
+    print(E)
     G.add_nodes_from(N)
     G.add_edges_from(E)
     nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=200)
@@ -255,7 +304,7 @@ def graphPlot(G, N, e):
     # plt.axis('off')
     plt.title('Delivery route')
     plt.savefig("./output/cvrp.png")  # save as png
-    plt.grid()
+    # plt.grid()
     plt.show()
 
     return(0)
@@ -266,7 +315,7 @@ if __name__ == "__main__":
 
     df = createDataFrame("./data/", filename)
     # num_shelter = len(df.index)
-    num_shelter = 31
+    num_shelter = 11
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -276,6 +325,21 @@ if __name__ == "__main__":
     # print(cost)
 
     route = savingMethod(num_shelter, cost)
+    print("ルート数：{}".format(len(route)))
 
-    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, route)
+    path = createEdgeSet(route)
+
+
+
+    # lineCount = 0
+    # readfile = './data/solomon_25/C101.txt'
+    # for line in open(readfile, "r"):
+    #     lineCount += 1
+    #     if lineCount < 10:
+    #         continue
+    #     print(line.strip())
+        # print(line)
+
+
+    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    # graphPlot(G, N, route)
