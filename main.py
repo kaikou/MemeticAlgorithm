@@ -27,7 +27,7 @@ MAX_CHILDREN = 10
 # # 遺伝子突然変異確率
 # GENOM_MUTATION = 0.1
 # 繰り返す世代数
-MAX_GENERATION = 30
+MAX_GENERATION = 1
 # 使用できる車両数
 VEHICLE = 3
 
@@ -170,7 +170,8 @@ def setRondomOrder():
 ランダムに選んだ2点間で順列交叉をする
 @INPUT:
     P_A: 親AのgenomClass
-    P_B: 親BのgenomClass
+    P_B: 親Bの
+    genomClass
 @OUTPUT:
     c: 交叉によって生成した子の順列
 """
