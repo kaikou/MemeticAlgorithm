@@ -30,7 +30,7 @@ MAX_GENERATION = 30
 # 使用できる車両数
 VEHICLE = 3
 # 車両の最大積載量
-CAPACITY = 200
+CAPACITY = 40
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 
@@ -105,15 +105,19 @@ def savingMethod(num_shelter, cost):
     for i in range(1, num_shelter):
         for j in range(i+1, num_shelter):
             s[i][j] = cost[i][0] + cost[0][j] - (LAMBDA * cost[i][j])
-    # print(s)
+    # print(s) #セービング値
 
     """
     経路の結合処理
     """
+    random_order = [i for i in range(1, num_shelter)]
+    random.shuffle(random_order)
+
     smax = 1
     while(smax != 0):
         smax = 0
-        for i in range(1, num_shelter):
+        for i in range(1, num_shelter): #1から順に
+        # for i in random_order:
             if q[i] > 0:
                 for j in range(1, num_shelter):
                     if i != j and q[j] > 0:
@@ -181,6 +185,15 @@ def savingMethod(num_shelter, cost):
     # print(s_arr)
 
 
+"""
+セービング法で構築されたルートに，
+デポを出発してデポに帰るようにエッジを辿る
+２次元配列を生成する．
+@INPUT:
+    route:セービング法で構築されたルート(0は表示されていない)
+@OUTPUT:
+    path:ルートを辿るエッジの3次元配列(0も表示)
+"""
 def createEdgeSet(route):
     E = []
     Path = []
@@ -218,6 +231,37 @@ def N_near(node, near):
 
     # print(near_cost[1:near+1, 0])
     return near_cost[1:near+1, 0]
+
+
+def localSearch(path):
+    EdgeSet = []
+    for edge in path:
+        for j in edge:
+            EdgeSet.append(j)
+
+    # 顧客ノードの部分集合
+    List = [i for i in range(1, num_shelter)]
+    random.shuffle(List) # ランダムな順に並べる
+    print(List)
+
+    for i in range(1, len(List)):
+        v = List[i]
+
+
+def Interchange_1_0(v, path):
+    EdgeSet = []
+    for edge in path:
+        for j in edge:
+            EdgeSet.append(j) # 解を構成する全てのエッジ集合
+
+    # 渡されたノードvに繋がるエッジ2つ
+    link_v = [i for i in EdgeSet if (v in i)]
+    v_minus = link_v[0][0]
+    v_plus = link_v[1][1]
+
+    print(v_minus)
+    print(v_plus)
+
 
 
 
@@ -293,7 +337,7 @@ def graphPlot(G, N, e):
     print(E)
     G.add_nodes_from(N)
     G.add_edges_from(E)
-    nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=20) # デフォルト200
+    nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
     nx.draw_networkx_labels(G, pos, labels, font_size=6) # デフォルト12
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
 
@@ -316,7 +360,7 @@ if __name__ == "__main__":
 
     df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
-    num_shelter = 31
+    num_shelter = 11
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -326,13 +370,19 @@ if __name__ == "__main__":
     # print(cost)
 
     start = time.time()
+    # セービング法でルートを構築する
+    # デポを含まない２次元配列で受け取る
     route = savingMethod(num_shelter, cost)
     elapsed_time = time.time() - start
     print("計算時間：" + str(elapsed_time) + "[sec]")
 
     print("ルート数：{}".format(len(route)))
 
-    # path = createEdgeSet(route)
+    #
+    path = createEdgeSet(route)
+    # localSearch(path)
+    Interchange_1_0(3, path)
+
 
 
     # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
