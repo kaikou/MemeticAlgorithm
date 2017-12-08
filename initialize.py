@@ -32,7 +32,7 @@ VEHICLE = 3
 # 車両の最大積載量
 CAPACITY = 40
 # セービング値の効果をコントロールする係数
-LAMBDA = 1
+LAMBDA = 0.5
 
 
 """
@@ -211,7 +211,7 @@ def createEdgeSet(route):
                     E.append([node, 0])
         Path.append(E)
         E = []
-    print(Path)
+    # print(Path)
     return Path
 
 """
@@ -226,18 +226,21 @@ def createEdgeSet(route):
 def N_near(node, near):
     near_cost = np.empty((0, 2), int)
     for i, c in enumerate(cost[node][:]):
+        if i == 0:
+            continue
         near_cost = np.append(near_cost, np.array([[i, c]]), axis=0)
     near_cost = near_cost[near_cost[:, 1].argsort()] # nodeに近い順にソート
+    # print(near_cost)
 
     # print(near_cost[1:near+1, 0])
     return near_cost[1:near+1, 0]
 
 
 def localSearch(path):
-    EdgeSet = []
-    for edge in path:
-        for j in edge:
-            EdgeSet.append(j)
+    # EdgeSet = []
+    # for edge in path:
+    #     for j in edge:
+    #         EdgeSet.append(j)
 
     # 顧客ノードの部分集合
     List = [i for i in range(1, num_shelter)]
@@ -248,19 +251,67 @@ def localSearch(path):
         v = List[i]
 
 
-def Interchange_1_0(v, path):
+def Neighborhoods(v, path, neighbor):
     EdgeSet = []
+    path_cost = 0
+
+    # 解を構成する全てのエッジ集合を生成
     for edge in path:
         for j in edge:
-            EdgeSet.append(j) # 解を構成する全てのエッジ集合
+            EdgeSet.append(j)
+    print(EdgeSet)
 
     # 渡されたノードvに繋がるエッジ2つ
     link_v = [i for i in EdgeSet if (v in i)]
-    v_minus = link_v[0][0]
-    v_plus = link_v[1][1]
+    v_minus = link_v[0][0] if v == link_v[0][1] else link_v[0][1]
+    v_plus = link_v[1][1] if v == link_v[1][0] else link_v[1][0]
+    # print(link_v[0]) # ノードvに向かうエッジ
+    # print(link_v[1]) # ノードvを出るエッジ
 
-    print(v_minus)
-    print(v_plus)
+    # ノードvからnearだけ近いノードをそれぞれwとして選ぶ
+    for w in N_near(v, 5):
+        if w == 0:
+            continue
+        link_w = [i for i in EdgeSet if (w in i)]
+        if link_v[0] == link_w[0] or link_v[1] == link_w[0] or \
+        link_v[0] == link_w[1] or link_v[1] == link_w[1]:
+            continue
+        w_minus = link_w[0][0] if w == link_w[0][1] else link_w[0][1] # ノードwに向かうエッジ
+        w_plus = link_w[1][1] if w == link_w[1][0] else link_w[1][0] # ノードwを出るエッジ
+        # print("w:" + str(w))
+        # print("w-:{}".format(link_w[0]))
+        # print("w+:{}".format(link_w[1]))
+
+        # print(neighbor)
+
+        if neighbor == "10inter":
+            # 選んだwに対して
+            # 元々繋がっているエッジ
+            l1 = cost[w_minus][w] # w-→w+
+            l2 = cost[v_minus][v] # v-→v
+            l3 = cost[v][v_plus] # v→v+
+            # つなぎ直すエッジ
+            l4 = cost[w_minus][v]
+            l5 = cost[v][w]
+            l6 = cost[v_minus][v_plus]
+
+            if l1 + l2 + l3 > l4 + l5 + l6:
+                print("局所探索:{}".format(w))
+                EdgeSet.remove(link_w[0])
+                EdgeSet.remove(link_v[0])
+                EdgeSet.remove(link_v[1])
+
+                EdgeSet.append([w_minus, v])
+                EdgeSet.append([v, w])
+                EdgeSet.append([v_minus, v_plus])
+                return EdgeSet
+
+
+        if neighbor == "2opt":
+            print("2optやるよー")
+
+
+
 
 
 
@@ -381,7 +432,7 @@ if __name__ == "__main__":
     #
     path = createEdgeSet(route)
     # localSearch(path)
-    Interchange_1_0(3, path)
+    Neighborhoods(3, path, "2opt")
 
 
 
