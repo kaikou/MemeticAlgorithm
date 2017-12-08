@@ -284,6 +284,9 @@ def Neighborhoods(v, path, neighbor):
 
         # print(neighbor)
 
+        """
+        (1,0)Interchange
+        """
         if neighbor == "10inter":
             # 選んだwに対して
             # 元々繋がっているエッジ
@@ -297,19 +300,32 @@ def Neighborhoods(v, path, neighbor):
 
             if l1 + l2 + l3 > l4 + l5 + l6:
                 print("局所探索:{}".format(w))
-                EdgeSet.remove(link_w[0])
+                EdgeSet.remove(link_w[0]) #-を含む方
                 EdgeSet.remove(link_v[0])
-                EdgeSet.remove(link_v[1])
+                EdgeSet.remove(link_v[1]) #+を含む方
 
                 EdgeSet.append([w_minus, v])
                 EdgeSet.append([v, w])
                 EdgeSet.append([v_minus, v_plus])
                 return EdgeSet
 
-
+        """
+        2-opt近傍
+        """
         if neighbor == "2opt":
             print("2optやるよー")
+            l1 = cost[v_minus][v]
+            l2 = cost[w_minus][w]
+            l3 = cost[v][w]
+            l4 = cost[v_minus][w_minus]
 
+            if l1 + l2 > l3 + l4:
+                print("2-opt適用")
+                EdgeSet.remove(link_w[0])
+                EdgeSet.remove(link_v[0])
+                EdgeSet.append([v, w])
+                EdgeSet.append([v_minus, w_minus])
+                return EdgeSet
 
 
 
@@ -385,6 +401,8 @@ def graphPlot(G, N, e):
         # labels[i] = df.ix[i].d
         labels[i] = i
 
+
+    E = test
     print(E)
     G.add_nodes_from(N)
     G.add_edges_from(E)
@@ -432,9 +450,9 @@ if __name__ == "__main__":
     #
     path = createEdgeSet(route)
     # localSearch(path)
-    Neighborhoods(3, path, "2opt")
+    test = Neighborhoods(7, path, "2opt")
 
 
 
-    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    # graphPlot(G, N, route)
+    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    graphPlot(G, N, route)
