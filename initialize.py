@@ -393,9 +393,39 @@ def Neighborhoods(v, path, neighbor):
                     EdgeSet.append([v_plus, w_minus])
                     return EdgeSet
 
-
-
     return EdgeSet
+
+"""
+2次元のエッジリストから，各閉路毎にエッジを持つ3次元リストに変換する
+"""
+def routeToPath(route):
+        route = sorted(route)
+        # print(route)
+        Path = [[[]]]
+        find_flag = False
+
+        for e in route:
+            find_flag = False
+            # 最初のエッジをリストに格納
+            if Path == [[[]]]:
+                Path[0][0] = e
+                continue
+
+            for i, k in enumerate(Path):
+                if(find_flag):
+                    break
+                if ((e[0] != 0 and e[0] in np.unique(k)) or \
+                    (e[1] != 0 and e[1] in np.unique(k))):
+                    Path[i].append(e)
+                    break
+
+                if i == len(Path)-1:
+                    Path.append([e])
+                    find_flag = True
+                    break
+        print(Path)
+        return Path
+
 
 
 
@@ -518,11 +548,22 @@ if __name__ == "__main__":
     path = createEdgeSet(route)
     # localSearch(path)
     test = Neighborhoods(7, path, "2opt")
+
     print(test)
+    routeToPath(test)
+
 
 
     # for i in range(1, num_shelter):
-    #     test = Neighborhoods(i, path, "2opt")
+    #     local_route = Neighborhoods(i, path, "2opt")
+    #     path = routeToPath(local_route)
+
+
+    # EdgeSet = []
+    # for edge in path:
+    #     for j in edge:
+    #         EdgeSet.append(j)
+    # test = EdgeSet
 
 
     # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
