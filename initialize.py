@@ -270,14 +270,18 @@ def Neighborhoods(v, path, neighbor):
 
     # ノードvからnearだけ近いノードをそれぞれwとして選ぶ
     for w in N_near(v, 5):
-        if w == 0:
-            continue
+
         link_w = [i for i in EdgeSet if (w in i)]
-        if link_v[0] == link_w[0] or link_v[1] == link_w[0] or \
-        link_v[0] == link_w[1] or link_v[1] == link_w[1]:
-            continue
-        w_minus = link_w[0][0] if w == link_w[0][1] else link_w[0][1] # ノードwに向かうエッジ
-        w_plus = link_w[1][1] if w == link_w[1][0] else link_w[1][0] # ノードwを出るエッジ
+
+        # 同じエッジを選ぶ可能性があるものは排除
+        # if link_v[0] == link_w[0] or link_v[1] == link_w[0] or \
+        # link_v[0] == link_w[1] or link_v[1] == link_w[1]:
+        #     continue
+
+        # ノードwに向かうエッジ
+        w_minus = link_w[0][0] if w == link_w[0][1] else link_w[0][1]
+        # ノードwを出るエッジ
+        w_plus = link_w[1][1] if w == link_w[1][0] else link_w[1][0]
         # print("w:" + str(w))
         # print("w-:{}".format(link_w[0]))
         # print("w+:{}".format(link_w[1]))
@@ -299,7 +303,7 @@ def Neighborhoods(v, path, neighbor):
             l6 = cost[v_minus][v_plus]
 
             if l1 + l2 + l3 > l4 + l5 + l6:
-                print("局所探索:{}".format(w))
+                print("(1,0)Interchangeやるよー")
                 EdgeSet.remove(link_w[0]) #-を含む方
                 EdgeSet.remove(link_v[0])
                 EdgeSet.remove(link_v[1]) #+を含む方
@@ -313,21 +317,85 @@ def Neighborhoods(v, path, neighbor):
         2-opt近傍
         """
         if neighbor == "2opt":
-            print("2optやるよー")
-            l1 = cost[v_minus][v]
-            l2 = cost[w_minus][w]
+            """
+            2-opt①
+            """
+            print("2opt①やるよー")
+            l1 = cost[v_minus][v] # 元のエッジ
+            l2 = cost[w_minus][w] # 元のエッジ
             l3 = cost[v][w]
             l4 = cost[v_minus][w_minus]
 
             if l1 + l2 > l3 + l4:
-                print("2-opt適用")
+                print("2-opt① " + str(v) + ":" + str(w) + "適用")
                 EdgeSet.remove(link_w[0])
                 EdgeSet.remove(link_v[0])
                 EdgeSet.append([v, w])
                 EdgeSet.append([v_minus, w_minus])
                 return EdgeSet
 
+            """
+            2-opt④
+            """
+            print("2opt④やるよー")
+            l1 = cost[v][v_plus] # 元のエッジ
+            l2 = cost[w][w_plus] # 元のエッジ
+            l3 = cost[v][w]
+            l4 = cost[v_plus][w_plus]
 
+            if l1 + l2 > l3 + l4:
+                print("2-opt④ " + str(v) + ":" + str(w) + "適用")
+                EdgeSet.remove(link_v[1])
+                EdgeSet.remove(link_w[1])
+                EdgeSet.append([v, w])
+                EdgeSet.append([v_plus, w_plus])
+                return EdgeSet
+
+            sameRoute = False
+            for r in path:
+                node = np.unique(r)
+                if v in node and w in node:
+                    sameRoute = True
+
+            #ノードvとwが異なるルートに存在する時
+            if not(sameRoute):
+                """
+                2-opt②
+                """
+                print("2opt②やるよー")
+                l1 = cost[v_minus][v] # 元のエッジ
+                l2 = cost[w][w_plus] # 元のエッジ
+                l3 = cost[v][w]
+                l4 = cost[v_minus][w_plus]
+
+                if l1 + l2 > l3 + l4:
+                    print("2-opt② " + str(v) + ":" + str(w) + "適用")
+                    EdgeSet.remove(link_v[0])
+                    EdgeSet.remove(link_w[1])
+                    EdgeSet.append([v, w])
+                    EdgeSet.append([v_minus, w_plus])
+                    return EdgeSet
+
+                """
+                2-opt③
+                """
+                print("2opt③やるよー")
+                l1 = cost[v][v_plus] # 元のエッジ
+                l2 = cost[w_minus][w] # 元のエッジ
+                l3 = cost[v][w]
+                l4 = cost[v_plus][w_minus]
+
+                if l1 + l2 > l3 + l4:
+                    print("2-opt③ " + str(v) + ":" + str(w) + "適用")
+                    EdgeSet.remove(link_v[1])
+                    EdgeSet.remove(link_w[0])
+                    EdgeSet.append([v, w])
+                    EdgeSet.append([v_plus, w_minus])
+                    return EdgeSet
+
+
+
+    return EdgeSet
 
 
 
@@ -447,12 +515,15 @@ if __name__ == "__main__":
 
     print("ルート数：{}".format(len(route)))
 
-    #
     path = createEdgeSet(route)
     # localSearch(path)
     test = Neighborhoods(7, path, "2opt")
+    print(test)
 
 
+    # for i in range(1, num_shelter):
+    #     test = Neighborhoods(i, path, "2opt")
 
-    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, route)
+
+    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    # graphPlot(G, N, route)
