@@ -15,11 +15,13 @@ import random
 from decimal import Decimal
 import numpy as np
 import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
 
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 30
+MAX_GENOM_LIST = 100
 # 各両親から生成される子個体の数
-MAX_CHILDREN = 10
+MAX_CHILDREN = 20
 # # 遺伝子選択数
 # SELECT_GENOM = 20
 # # 個体突然変異確率
@@ -27,9 +29,9 @@ MAX_CHILDREN = 10
 # # 遺伝子突然変異確率
 # GENOM_MUTATION = 0.1
 # 繰り返す世代数
-MAX_GENERATION = 1
+MAX_GENERATION = 100
 # 使用できる車両数
-VEHICLE = 3
+VEHICLE = 4
 
 
 
@@ -99,18 +101,18 @@ def createGenom(num_shelter, m):
 @OUTPUT:
     x : 移動するエッジの行列
 """
-def createEdgeMatrix(genom):
+def createEdgeSet(genom):
     # 配送順序の配列を変数genomにコピー
     # genom = ga.getGenom()
     total_cost = 0
     route_flag = False
-    # どの避難所間を通ったかを示す2次元配列を0で初期化
-    x = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
+    E = []
+
     for i in range(len(genom)):
         # ルート区切り番号だった場合
         if genom[i] > num_shelter - 1: # >10
             if route_flag == True:
-                x[genom[i-1]][0] = 1
+                E.append([genom[i-1], 0])
                 # print("{}→{}".format(genom[i-1], 0))
             route_flag = False
             # print("_{}_区切り".format(genom[i]))
@@ -119,25 +121,80 @@ def createEdgeMatrix(genom):
             # 現在参照している避難所番号の前が区切り番号だった，
             # もしくは遺伝子の最初を参照している場合
             if route_flag == False:
-                x[0][genom[i]] = 1
+                E.append([0, genom[i]])
                 route_flag = True
                 # print("{}→{}".format(0, genom[i]))
             else : # フラグがTrue，つまり経路続行
-                x[genom[i-1]][genom[i]] = 1
+                E.append([genom[i-1], genom[i]])
                 # print("{}→{}".format(genom[i-1], genom[i]))
     # 遺伝子の最後の番号が区切り番号でない場合，
     if route_flag == True:
-        x[genom[i]][0] = 1
+        E.append([genom[i], 0])
         # print("{}→{}".format(genom[i], 0))
 
     #総移動コストの計算
-    for i in range(num_shelter):
-        for j in range(num_shelter):
-            total_cost += cost[i][j] * x[i][j]
+    for e in E:
+        total_cost += cost[e[0]][e[1]]
 
     # print("総移動コスト:{}".format(total_cost))
-    # 総移動コストと，移動エッジ行列を返す
-    return x, total_cost
+    # 移動エッジ行列と，総移動コストを返す
+    return E, total_cost
+
+
+"""
+2次元のエッジリストから，各閉路毎にエッジを持つ3次元リストに変換する
+@INPUT:
+    route: エッジの２次元リスト
+@OUTPUT:
+    Path: ルート情報を含むエッジの3次元リスト
+"""
+def routeToPath(route):
+    route = sorted(route)
+    Path = []
+    R = []
+    v_e_1 = 0
+
+    while(len(route)):
+        e = route[0]
+        find_flag = False
+        heiro = False
+        # エッジ端のどちらかに0を含むか
+        if e[0] == 0 or e[1] == 0:
+            R.append(e)
+            route.remove(e)
+            # 0じゃない方をv_eにセット
+            v_e = e[1] if e[0] == 0 else e[0]
+        else: # 0を含まない閉路を発見
+            R.append(e)
+            route.remove(e)
+            v_e = e[1]
+            v_e_1 = e[0]
+            heiro = True
+
+        while(not(find_flag)):
+            # v_eを含むエッジをroute内から探しeにセット
+            e = random.choice(list(filter(lambda x: v_e in x, route)))
+            R.append(e)
+            route.remove(e)
+
+            # eの端点のv_eでない方を新たにv_eとする
+            v_e = e[0] if v_e == e[1] else e[1]
+            # print("次の端点:{}".format(v_e))
+
+            # 次の端点が0だった場合
+            if(v_e == 0):
+                Path.append(R)
+                R = []
+                find_flag = True
+            # 閉路探索中に最初のノードを発見した場合
+            if(heiro == True and v_e == v_e_1):
+                Path.append(R)
+                v_e_1 = 0
+                R=[]
+                find_flag = True
+    # print(Path)
+    return(Path)
+
 
 """
 【家族内淘汰】
@@ -224,7 +281,7 @@ EAXのステップ1と2を処理する関数
     P_B : 親BのgenomClass
     ※それぞれ.getGenom() .getEdge()で遺伝子情報とエッジ情報を取得
 @OUTPUT:
-
+    Child: 子解
 """
 def preEAX(P_A, P_B):
     E_A = [] #親Aのエッジを格納するリスト
@@ -301,12 +358,98 @@ def preEAX(P_A, P_B):
                 R_A = sorted([x for x in R_A if (x and x in G_AB)])
                 ABflag = True
                 print("C:{}".format(C))
-    return C # AB-cycleのリストを返す
+    print("AB-cycle:{}".format(C))
+    return C
 
 
 def edgeAssemblyCrossover():
     pass
 
+
+
+"""
+グラフのリストを作成する
+@INPUT:
+    None
+@OUTPUT:
+    X:
+    Y:
+    N:
+    pos:
+    G:
+"""
+def createGraphList():
+    X = []
+    Y = []
+    N = []
+    G = nx.Graph()
+    pos = {}  #ノードの位置情報格納
+
+    # # デポ以外の座標を代入
+    # for i in range(num_shelter):
+    #     X.append(df.ix[i].x)
+    #     Y.append(df.ix[i].y)
+
+    # ノード番号とノードの座標を格納
+    for i in range(num_shelter):
+        N.append(i)
+        pos[i] = (df.ix[i].x, df.ix[i].y)
+
+    return(X, Y, N, pos, G)
+
+"""
+グラフをプロットする
+"""
+def graphPlot(G, N, edgeList):
+    E = []
+    edge_labels = {}
+    sum_cost = 0
+    labels = {}
+
+
+    for e in edgeList:
+        E.append(e)
+        edge_labels[(e[0], e[1])] = cost[e[0]][e[1]]
+
+    # for edge in e:
+    #     for i, node in enumerate(edge):
+    #         if i == 0:
+    #             E.append([0, node])
+    #             edge_labels[(0, node)] = cost[0][node]
+    #             pre_node = node
+    #             if len(edge) == 1:
+    #                 E.append([node, 0])
+    #                 edge_labels[(node, 0)] = cost[node][0]
+    #         else:
+    #             E.append([pre_node, node])
+    #             edge_labels[(pre_node, node)] = cost[pre_node][node]
+    #             pre_node = node
+    #             if i == len(edge)-1:
+    #                 E.append([node, 0])
+    #                 edge_labels[(node, 0)] = cost[node][0]
+
+    for i in range(num_shelter):
+        # labels[i] = df.ix[i].d
+        labels[i] = i
+
+    G.add_nodes_from(N)
+    G.add_edges_from(E)
+    nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
+    nx.draw_networkx_labels(G, pos, labels, font_size=6) # デフォルト12
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
+
+    plt.legend()
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.xlim(0, 70)
+    plt.ylim(0, 70)
+    # plt.axis('off')
+    plt.title('Delivery route')
+    plt.savefig("./output/" + filename +".png")  # save as png
+    # plt.grid()
+    plt.show()
+
+    return(0)
 
 
 if __name__ == '__main__':
@@ -315,7 +458,7 @@ if __name__ == '__main__':
     # 引数[0]:ファイルパス，[1]:ファイル名
     df = createDataFrame("./data/", filename)
     num_shelter = len(df.index)
-    # num_shelter = 11
+    num_shelter = 31
     result_df = pd.DataFrame(index=[], columns=['世代', '総移動コスト'])
 
     # 各避難所間の移動コスト行列を生成する
@@ -338,8 +481,8 @@ if __name__ == '__main__':
 
         # 現行の集団中の個体全てのエッジ情報をgenomClassに保存
         for i in range(MAX_GENOM_LIST):
-            x, total_cost = createEdgeMatrix(current_generation_individual_group[i].getGenom())
-            current_generation_individual_group[i].setEdge(x)
+            EdgeSet, total_cost = createEdgeSet(current_generation_individual_group[i].getGenom())
+            current_generation_individual_group[i].setEdge(EdgeSet)
             current_generation_individual_group[i].setEvaluation(total_cost)
 
         for i in range(MAX_GENOM_LIST):
@@ -352,15 +495,24 @@ if __name__ == '__main__':
                 P_B = current_generation_individual_group[order[0]]
 
 
+            # 子解を代入するリスト
+            c = []
+            c_cost = []
+            """
+            交叉：EAX
+            """
+            # C = preEAX(P_A, P_B)
+            # for j in range(MAX_CHILDREN):
+            #     c.append(edgeAssemblyCrossover(C))
+
+
             """
             orderCrossoverにてプログラム全体の処理確認
             """
-            c = []
-            c_cost = []
             # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
             for j in range(MAX_CHILDREN):
                 c.append(orderCrossover(P_A, P_B))
-                a, b = createEdgeMatrix(c[j]) # bがコスト
+                a, b = createEdgeSet(c[j]) # bがコスト
                 c_cost.append(b)
 
             # 現在の親ペアの子の中で一番コストの低い個体が親Aよりも
@@ -400,6 +552,7 @@ if __name__ == '__main__':
 
         print("====第{}世代====".format(count_))
         print("最も優れた個体の総移動コスト:{}".format(min_))
+        # break
         # for i in range(MAX_GENOM_LIST):
         #     print("遺伝子<{}>:{}".format(i + 1, current_generation_individual_group[i].getEvaluation()))
 
@@ -407,4 +560,8 @@ if __name__ == '__main__':
     print(result_df)
     print("最も優れた個体:{}".format(current_generation_individual_group[min_idx].getGenom()))
     print("最も優れた個体の総移動コスト:{}".format(min_))
+
+
+    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    graphPlot(G, N, current_generation_individual_group[min_idx].getEdge())
     result_df.to_csv("./output/" + filename + "_result.csv", index=False)
