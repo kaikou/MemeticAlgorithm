@@ -397,6 +397,14 @@ def Neighborhoods(v, path, neighbor):
     return EdgeSet
 
 
+
+def isRoute(edgeList, v_e_1, v_e):
+    # エッジリストの長さが偶数かどうか
+    if len(edgeList) % 2 == 0:
+        if v_e_1 == v_e:
+            return 1
+    else:
+        return 0
 """
 2次元のエッジリストから，各閉路毎にエッジを持つ3次元リストに変換する
 @INPUT:
@@ -408,17 +416,24 @@ def routeToPath(route):
     route = sorted(route)
     Path = []
     R = []
-    s = 0
+    v_e_1 = 0
 
     while(len(route)):
         e = route[0]
         find_flag = False
+        heiro = False
         # エッジ端のどちらかに0を含むか
         if e[0] == 0 or e[1] == 0:
             R.append(e)
             route.remove(e)
             # 0じゃない方をv_eにセット
             v_e = e[1] if e[0] == 0 else e[0]
+        else: # 0を含まない閉路を発見
+            R.append(e)
+            route.remove(e)
+            v_e = e[1]
+            v_e_1 = e[0]
+            heiro = True
 
         while(not(find_flag)):
             # v_eを含むエッジをroute内から探しeにセット
@@ -435,7 +450,12 @@ def routeToPath(route):
                 Path.append(R)
                 R = []
                 find_flag = True
-
+            # 閉路探索中に最初のノードを発見した場合
+            if(heiro == True and v_e == v_e_1):
+                Path.append(R)
+                v_e_1 = 0
+                R=[]
+                find_flag = True
     print(Path)
     return(Path)
 
@@ -561,6 +581,9 @@ if __name__ == "__main__":
 
     test = Neighborhoods(7, path, "2opt")
     print(test)
+
+
+    test = [[0,1], [2, 1], [2, 3], [3, 0], [4, 5], [5, 6], [4, 0], [6, 0], [7, 8], [8, 9], [7, 9]]
     path = routeToPath(test)
 
 
@@ -572,12 +595,12 @@ if __name__ == "__main__":
 
 
 
-    EdgeSet = []
-    for edge in path:
-        for j in edge:
-            EdgeSet.append(j)
-    test = EdgeSet
+    # EdgeSet = []
+    # for edge in path:
+    #     for j in edge:
+    #         EdgeSet.append(j)
+    # test = EdgeSet
 
 
-    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, route)
+    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    # graphPlot(G, N, route)
