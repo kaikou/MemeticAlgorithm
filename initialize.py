@@ -351,6 +351,7 @@ def Neighborhoods(v, path, neighbor):
                 EdgeSet.append([v_plus, w_plus])
                 return EdgeSet
 
+            # vとwが同じルートか判定
             sameRoute = False
             for r in path:
                 node = np.unique(r)
@@ -395,39 +396,48 @@ def Neighborhoods(v, path, neighbor):
 
     return EdgeSet
 
+
 """
 2次元のエッジリストから，各閉路毎にエッジを持つ3次元リストに変換する
+@INPUT:
+    route: エッジの２次元リスト
+@OUTPUT:
+    Path: ルート情報を含むエッジの3次元リスト
 """
 def routeToPath(route):
-        route = sorted(route)
-        # print(route)
-        Path = [[[]]]
+    route = sorted(route)
+    Path = []
+    R = []
+    s = 0
+
+    while(len(route)):
+        e = route[0]
         find_flag = False
+        # エッジ端のどちらかに0を含むか
+        if e[0] == 0 or e[1] == 0:
+            R.append(e)
+            route.remove(e)
+            # 0じゃない方をv_eにセット
+            v_e = e[1] if e[0] == 0 else e[0]
 
-        for e in route:
-            find_flag = False
-            # 最初のエッジをリストに格納
-            if Path == [[[]]]:
-                Path[0][0] = e
-                continue
+        while(not(find_flag)):
+            # v_eを含むエッジをroute内から探しeにセット
+            e = random.choice(list(filter(lambda x: v_e in x, route)))
+            R.append(e)
+            route.remove(e)
 
-            for i, k in enumerate(Path):
-                if(find_flag):
-                    break
-                if ((e[0] != 0 and e[0] in np.unique(k)) or \
-                    (e[1] != 0 and e[1] in np.unique(k))):
-                    Path[i].append(e)
-                    break
+            # eの端点のv_eでない方を新たにv_eとする
+            v_e = e[0] if v_e == e[1] else e[1]
+            # print("次の端点:{}".format(v_e))
 
-                if i == len(Path)-1:
-                    Path.append([e])
-                    find_flag = True
-                    break
-        print(Path)
-        return Path
+            # 次の端点が0だった場合
+            if(v_e == 0):
+                Path.append(R)
+                R = []
+                find_flag = True
 
-
-
+    print(Path)
+    return(Path)
 
 
 
@@ -547,10 +557,11 @@ if __name__ == "__main__":
 
     path = createEdgeSet(route)
     # localSearch(path)
-    test = Neighborhoods(7, path, "2opt")
 
+
+    test = Neighborhoods(7, path, "2opt")
     print(test)
-    routeToPath(test)
+    path = routeToPath(test)
 
 
 
@@ -559,12 +570,14 @@ if __name__ == "__main__":
     #     path = routeToPath(local_route)
 
 
-    # EdgeSet = []
-    # for edge in path:
-    #     for j in edge:
-    #         EdgeSet.append(j)
-    # test = EdgeSet
 
 
-    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    # graphPlot(G, N, route)
+    EdgeSet = []
+    for edge in path:
+        for j in edge:
+            EdgeSet.append(j)
+    test = EdgeSet
+
+
+    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    graphPlot(G, N, route)
