@@ -909,7 +909,7 @@ def createGraphList():
 """
 グラフをプロットする
 """
-def graphPlot(G, N, edgeList):
+def graphPlot(G, N, edgeList, isLast):
     E = []
     edge_labels = {}
     sum_cost = 0
@@ -925,8 +925,10 @@ def graphPlot(G, N, edgeList):
 
     G.add_nodes_from(N)
     G.add_edges_from(E)
-    nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
-    nx.draw_networkx_labels(G, pos, labels, font_size=6) # デフォルト12
+    nx.draw_networkx_nodes(G, pos, node_size=80, node_color="r")
+    nx.draw_networkx_edges(G, pos, width=1)
+    # nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
+    nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
 
     plt.legend()
@@ -936,11 +938,17 @@ def graphPlot(G, N, edgeList):
     plt.ylim(0, 70)
     # plt.axis('off')
     plt.title('Delivery route')
-    plt.savefig("./output/" + filename +".png")  # save as png
+    # plt.savefig("./output/" + filename +".png")  # save as png
     # plt.grid()
-    plt.show()
 
-    return(0)
+    if isLast == 0:
+        plt.pause(0.01)
+        plt.clf()
+    else:
+        print("終わり")
+        plt.savefig("./output/" + filename +".png")  # save as png
+        plt.show()
+        return(0)
 
 
 if __name__ == "__main__":
@@ -981,14 +989,18 @@ if __name__ == "__main__":
     print(route)
     for n, i in enumerate(random_order):
         prePath = copy.deepcopy(path)
-        local_route = Neighborhoods(i, path, "10inter")
-        path = routeToPath(local_route)
-        local_route = Neighborhoods(i, path, "11inter")
-        path = routeToPath(local_route)
-        local_route = Neighborhoods(i, path, "01inter")
-        path = routeToPath(local_route)
+        # # local_route = Neighborhoods(i, path, "10inter")
+        # path = routeToPath(local_route)
+        # local_route = Neighborhoods(i, path, "11inter")
+        # path = routeToPath(local_route)
+        # local_route = Neighborhoods(i, path, "01inter")
+        # path = routeToPath(local_route)
         local_route = Neighborhoods(i, path, "2opt")
         path = routeToPath(local_route)
+
+        X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+        graphPlot(G, N, local_route, 0)
+
 
         if path == False:
             path = copy.deepcopy(prePath)
@@ -997,4 +1009,4 @@ if __name__ == "__main__":
 
     print(path)
     X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, route)
+    graphPlot(G, N, route, 1)
