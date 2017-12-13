@@ -12,6 +12,7 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 import time
+import copy
 
 # # 遺伝子情報の長さ
 # GENOM_LENGTH = 50
@@ -253,6 +254,7 @@ def localSearch(path):
 
 def Neighborhoods(v, path, neighbor):
     EdgeSet = []
+    DefaultEdgeSet = []
     path_cost = 0
 
     # 解を構成する全てのエッジ集合を生成
@@ -260,23 +262,30 @@ def Neighborhoods(v, path, neighbor):
         for j in edge:
             EdgeSet.append(j)
     print(EdgeSet)
+    DefaultEdgeSet = copy.deepcopy(EdgeSet)
 
     # 渡されたノードvに繋がるエッジ2つ
     link_v = [i for i in EdgeSet if (v in i)]
     v_minus = link_v[0][0] if v == link_v[0][1] else link_v[0][1]
     v_plus = link_v[1][1] if v == link_v[1][0] else link_v[1][0]
-    # print(link_v[0]) # ノードvに向かうエッジ
-    # print(link_v[1]) # ノードvを出るエッジ
+    # print("link_v:{}".format(link_v))
+    # print("link_v[0]:{}".format(link_v[0])) # ノードvに向かうエッジ
+    # print("link_v[1]:{}".format(link_v[1])) # ノードvを出るエッジ
 
     # ノードvからnearだけ近いノードをそれぞれwとして選ぶ
     for w in N_near(v, 5):
 
         link_w = [i for i in EdgeSet if (w in i)]
 
+        if(len(link_v) < 2 or len(link_w) < 2):
+            print("ノードに対するエッジが2つない")
+            EdgeSet = DefaultEdgeSet
+            continue
+
         # 同じエッジを選ぶ可能性があるものは排除
-        # if link_v[0] == link_w[0] or link_v[1] == link_w[0] or \
-        # link_v[0] == link_w[1] or link_v[1] == link_w[1]:
-        #     continue
+        if link_v[0] == link_w[0] or link_v[1] == link_w[0] or \
+        link_v[0] == link_w[1] or link_v[1] == link_w[1]:
+            continue
 
         # ノードwに向かうエッジ
         w_minus = link_w[0][0] if w == link_w[0][1] else link_w[0][1]
@@ -285,16 +294,20 @@ def Neighborhoods(v, path, neighbor):
         # print("w:" + str(w))
         # print("w-:{}".format(link_w[0]))
         # print("w+:{}".format(link_w[1]))
-
-        # print(neighbor)
+        # print("link_w[0]:{}".format(link_w[0]))
+        # print("link_w[1]:{}".format(link_w[1]))
 
         """
         (1,0)Interchange
         """
         if neighbor == "10inter":
+            print("(1,0)Interchange①やるよー")
+            """
+            (1,0)Interchange①
+            """
             # 選んだwに対して
             # 元々繋がっているエッジ
-            l1 = cost[w_minus][w] # w-→w+
+            l1 = cost[w_minus][w] # w-→w
             l2 = cost[v_minus][v] # v-→v
             l3 = cost[v][v_plus] # v→v+
             # つなぎ直すエッジ
@@ -303,7 +316,7 @@ def Neighborhoods(v, path, neighbor):
             l6 = cost[v_minus][v_plus]
 
             if l1 + l2 + l3 > l4 + l5 + l6:
-                print("(1,0)Interchangeやるよー")
+                print("10inter① " + str(v) + ":" + str(w) + "適用")
                 EdgeSet.remove(link_w[0]) #-を含む方
                 EdgeSet.remove(link_v[0])
                 EdgeSet.remove(link_v[1]) #+を含む方
@@ -311,6 +324,261 @@ def Neighborhoods(v, path, neighbor):
                 EdgeSet.append([w_minus, v])
                 EdgeSet.append([v, w])
                 EdgeSet.append([v_minus, v_plus])
+
+                # [n, n]のようなエッジを持たないように修正
+                for es in EdgeSet:
+                    if es[0] == es[1]:
+                        EdgeSet = DefaultEdgeSet
+                        continue
+
+                # デポを含まない巡回路ができた場合
+                if(isHeiro(routeToPath(EdgeSet)) != 0):
+                    EdgeSet = DefaultEdgeSet
+                    continue
+                return EdgeSet
+
+            """
+            (1,0)Interchange②
+            """
+            # 元々繋がっているエッジ
+            l1 = cost[w][w_plus] # w→w+
+            l2 = cost[v_minus][v] # v-→v
+            l3 = cost[v][v_plus] # v→v+
+            # つなぎ直すエッジ
+            l4 = cost[w_plus][v]
+            l5 = cost[v][w]
+            l6 = cost[v_minus][v_plus]
+
+            if l1 + l2 + l3 > l4 + l5 + l6:
+                print("10inter② " + str(v) + ":" + str(w) + "適用")
+                EdgeSet.remove(link_w[1]) #+を含む方
+                EdgeSet.remove(link_v[0])
+                EdgeSet.remove(link_v[1]) #+を含む方
+
+                EdgeSet.append([w_plus, v])
+                EdgeSet.append([v, w])
+                EdgeSet.append([v_minus, v_plus])
+
+                # [n, n]のようなエッジを持たないように修正
+                for es in EdgeSet:
+                    if es[0] == es[1]:
+                        EdgeSet = DefaultEdgeSet
+                        continue
+
+                # デポを含まない巡回路ができた場合
+                if(isHeiro(routeToPath(EdgeSet)) != 0):
+                    EdgeSet = DefaultEdgeSet
+                    continue
+                return EdgeSet
+
+        """
+        (0,1)Interchange
+        """
+        if neighbor == "01inter":
+            print("(0,1)Interchange①やるよー")
+            """
+            (0,1)Interchange①
+            """
+            # 選んだwに対して
+            # 元々繋がっているエッジ
+            l1 = cost[w_minus][w]
+            l2 = cost[w][w_plus]
+            l3 = cost[v_minus][v]
+            # つなぎ直すエッジ
+            l4 = cost[w_minus][w_plus]
+            l5 = cost[v_minus][w]
+            l6 = cost[v][w]
+
+            if l1 + l2 + l3 > l4 + l5 + l6:
+                print("01inter① " + str(v) + ":" + str(w) + "適用")
+                EdgeSet.remove(link_w[0]) #-を含む方
+                EdgeSet.remove(link_w[1])
+                EdgeSet.remove(link_v[0]) #-を含む方
+
+                EdgeSet.append([w_minus, w_plus])
+                EdgeSet.append([v_minus, w])
+                EdgeSet.append([v, w])
+
+                # [n, n]のようなエッジを持たないように修正
+                for es in EdgeSet:
+                    if es[0] == es[1]:
+                        EdgeSet = DefaultEdgeSet
+                        continue
+
+                # デポを含まない巡回路ができた場合
+                if(isHeiro(routeToPath(EdgeSet)) != 0):
+                    EdgeSet = DefaultEdgeSet
+                    continue
+                return EdgeSet
+
+            """
+            (0,1)Interchange②
+            """
+            # 元々繋がっているエッジ
+            l1 = cost[w_minus][w]
+            l2 = cost[w][w_plus]
+            l3 = cost[v][v_plus]
+            # つなぎ直すエッジ
+            l4 = cost[w_minus][w_plus]
+            l5 = cost[v_plus][w]
+            l6 = cost[v][w]
+
+            if l1 + l2 + l3 > l4 + l5 + l6:
+                print("01inter② " + str(v) + ":" + str(w) + "適用")
+                EdgeSet.remove(link_w[0]) #-を含む方
+                EdgeSet.remove(link_w[1])
+                EdgeSet.remove(link_v[1]) #-を含む方
+
+                EdgeSet.append([w_minus, w_plus])
+                EdgeSet.append([v_plus, w])
+                EdgeSet.append([v, w])
+
+                # [n, n]のようなエッジを持たないように修正
+                for es in EdgeSet:
+                    if es[0] == es[1]:
+                        EdgeSet = DefaultEdgeSet
+                        continue
+
+                # デポを含まない巡回路ができた場合
+                if(isHeiro(routeToPath(EdgeSet)) != 0):
+                    EdgeSet = DefaultEdgeSet
+                    continue
+                return EdgeSet
+
+        """
+        (1,1)Interchange
+        """
+        if neighbor == "11inter":
+            print("(1,1)Interchangeやるよー")
+
+            """
+            (1,1)Interchange①
+            """
+
+            """
+            w--を求めるステップ
+            """
+            # ノードwがどのルートに含まれるか求める
+            for i, route in enumerate(path):
+                for n in route:
+                    if w in n:
+                        route_num = i
+                        break
+            # print("{}を含むルートは:{}".format(w, path[route_num]))
+            # ノードw-を持つリストを作る
+            w_minus2list = [x for x in path[route_num] \
+                            if(w_minus in x and x != link_w[0])]
+            # リストからノードw-出ない方をノードw--として選択
+            w_minus_minus = w_minus2list[0][0] if w_minus2list[0][1] == w_minus \
+            else w_minus2list[0][1]
+            # print("リスト:{}".format(w_minus2list[0]))
+            # print("w-:{}".format(w_minus))
+            # print("w--:{}".format(w_minus_minus))
+
+            # 同じエッジを選ぶ可能性があるものは排除
+            if link_v[0] == w_minus2list[0] or link_v[1] == w_minus2list[0] \
+            or link_w[0] == w_minus2list[0] or link_w[1] == w_minus2list[0]:
+                continue
+
+            # 選んだwに対して
+            # 元々繋がっているエッジ
+            l1 = cost[w_minus_minus][w_minus]
+            l2 = cost[w_minus][w]
+            l3 = cost[v_minus][v]
+            l4 = cost[v][v_plus]
+            # つなぎ直すエッジ
+            l5 = cost[w_minus_minus][v]
+            l6 = cost[w_minus][v_plus]
+            l7 = cost[v_minus][w_minus]
+            l8 = cost[v][w]
+
+            if l1 + l2 + l3 + l4 > l5 + l6 + l7 + l8:
+                print("11inter① " + str(v) + ":" + str(w) + "適用")
+                print("EdgeSet:{}".format(sorted(EdgeSet)))
+                print("w_minus2list[0]:{}".format(w_minus2list[0]))
+                print("link_w[0]:{}".format(link_w[0]))
+                print("link_v[0]:{}".format(link_v[0]))
+                EdgeSet.remove(w_minus2list[0]) #--を含む方
+                EdgeSet.remove(link_w[0])
+                EdgeSet.remove(link_v[0])
+                EdgeSet.remove(link_v[1])
+
+                EdgeSet.append([w_minus_minus, v])
+                EdgeSet.append([v_minus, v_plus])
+                EdgeSet.append([v_minus, w_minus])
+                EdgeSet.append([v, w])
+
+                # [n, n]のようなエッジを持たないように修正
+                for es in EdgeSet:
+                    if es[0] == es[1]:
+                        EdgeSet = DefaultEdgeSet
+                        continue
+
+                # デポを含まない巡回路ができた場合
+                if not(routeToPath(EdgeSet)):
+                    print("あいうえお")
+                    EdgeSet = DefaultEdgeSet
+                    continue
+                return EdgeSet
+
+            """
+            (1,1)Interchange②
+            """
+
+            """
+            w++を求めるステップ
+            """
+            # ノードw-を持つリストを作る
+            w_plus2list = [x for x in path[route_num] \
+                            if(w_plus in x and x != link_w[1])]
+            # リストからノードw+でない方をノードw++として選択
+            w_plus_plus = w_plus2list[0][1] if w_plus2list[0][0] == w_plus \
+            else w_plus2list[0][0]
+
+            # print("{}を含むルートは:{}".format(w, path[route_num]))
+            # print("リスト:{}".format(w_plus2list[0]))
+            # print("w+:{}".format(w_plus))
+            # print("w++:{}".format(w_plus_plus))
+
+            # 元々繋がっているエッジ
+            l1 = cost[w_plus][w_plus_plus]
+            l2 = cost[w][w_plus]
+            l3 = cost[v_minus][v]
+            l4 = cost[v][v_plus]
+            # つなぎ直すエッジ
+            l5 = cost[v][w_plus_plus]
+            l6 = cost[v_minus][w_plus]
+            l7 = cost[v_plus][w_plus]
+            l8 = cost[v][w]
+
+            # 同じエッジを選ぶ可能性があるものは排除
+            if link_v[0] == w_plus2list[0] or link_v[1] == w_plus2list[0] \
+            or link_w[0] == w_plus2list[0] or link_w[1] == w_plus2list[0]:
+                continue
+
+            if l1 + l2 + l3 + l4 > l5 + l6 + l7 + l8:
+                print("11inter② " + str(v) + ":" + str(w) + "適用")
+                EdgeSet.remove(w_plus2list[0]) #--を含む方
+                EdgeSet.remove(link_w[1])
+                EdgeSet.remove(link_v[0])
+                EdgeSet.remove(link_v[1])
+
+                EdgeSet.append([v, w_plus_plus])
+                EdgeSet.append([v_minus, w_plus])
+                EdgeSet.append([v_plus, w_plus])
+                EdgeSet.append([v, w])
+
+                # [n, n]のようなエッジを持たないように修正
+                for es in EdgeSet:
+                    if es[0] == es[1]:
+                        EdgeSet = DefaultEdgeSet
+                        continue
+
+                # デポを含まない巡回路ができた場合
+                if not(routeToPath(EdgeSet)):
+                    print("あいうえお")
+                    EdgeSet = DefaultEdgeSet
+                    continue
                 return EdgeSet
 
         """
@@ -332,6 +600,16 @@ def Neighborhoods(v, path, neighbor):
                 EdgeSet.remove(link_v[0])
                 EdgeSet.append([v, w])
                 EdgeSet.append([v_minus, w_minus])
+
+                for es in EdgeSet:
+                    if es[0] == es[1]:
+                        EdgeSet = DefaultEdgeSet
+                        continue
+
+                # デポを含まない巡回路ができた場合
+                if(isHeiro(routeToPath(EdgeSet)) != 0):
+                    EdgeSet = DefaultEdgeSet
+                    continue
                 return EdgeSet
 
             """
@@ -349,6 +627,16 @@ def Neighborhoods(v, path, neighbor):
                 EdgeSet.remove(link_w[1])
                 EdgeSet.append([v, w])
                 EdgeSet.append([v_plus, w_plus])
+
+                for es in EdgeSet:
+                    if es[0] == es[1]:
+                        EdgeSet = DefaultEdgeSet
+                        continue
+
+                # デポを含まない巡回路ができた場合
+                if(isHeiro(routeToPath(EdgeSet)) != 0):
+                    EdgeSet = DefaultEdgeSet
+                    continue
                 return EdgeSet
 
             # vとwが同じルートか判定
@@ -375,6 +663,16 @@ def Neighborhoods(v, path, neighbor):
                     EdgeSet.remove(link_w[1])
                     EdgeSet.append([v, w])
                     EdgeSet.append([v_minus, w_plus])
+
+                    for es in EdgeSet:
+                        if es[0] == es[1]:
+                            EdgeSet = DefaultEdgeSet
+                            continue
+
+                    # デポを含まない巡回路ができた場合
+                    if(isHeiro(routeToPath(EdgeSet)) != 0):
+                        EdgeSet = DefaultEdgeSet
+                        continue
                     return EdgeSet
 
                 """
@@ -392,25 +690,27 @@ def Neighborhoods(v, path, neighbor):
                     EdgeSet.remove(link_w[0])
                     EdgeSet.append([v, w])
                     EdgeSet.append([v_plus, w_minus])
-                    return EdgeSet
 
+                    # [n, n]のようなエッジを持たないように修正
+                    for es in EdgeSet:
+                        if es[0] == es[1]:
+                            EdgeSet = DefaultEdgeSet
+                            continue
+                    # デポを含まない巡回路ができた場合
+                    if(isHeiro(routeToPath(EdgeSet)) != 0):
+                        EdgeSet = DefaultEdgeSet
+                        continue
+                    return EdgeSet
     return EdgeSet
 
 
-
-def isRoute(edgeList, v_e_1, v_e):
-    # エッジリストの長さが偶数かどうか
-    if len(edgeList) % 2 == 0:
-        if v_e_1 == v_e:
-            return 1
-    else:
-        return 0
 """
 2次元のエッジリストから，各閉路毎にエッジを持つ3次元リストに変換する
 @INPUT:
     route: エッジの２次元リスト
 @OUTPUT:
     Path: ルート情報を含むエッジの3次元リスト
+    False: 順回路を構築できない
 """
 def routeToPath(route):
     route = sorted(route)
@@ -422,8 +722,11 @@ def routeToPath(route):
         e = route[0]
         find_flag = False
         heiro = False
+        if e[0] == 0 and e[1] == 0:
+            route.remove(e)
+            continue
         # エッジ端のどちらかに0を含むか
-        if e[0] == 0 or e[1] == 0:
+        elif e[0] == 0 or e[1] == 0:
             R.append(e)
             route.remove(e)
             # 0じゃない方をv_eにセット
@@ -437,27 +740,87 @@ def routeToPath(route):
 
         while(not(find_flag)):
             # v_eを含むエッジをroute内から探しeにセット
+            if (v_e not in np.unique(route)):
+                print("見つからない")
+                return False
             e = random.choice(list(filter(lambda x: v_e in x, route)))
             R.append(e)
             route.remove(e)
+            # print("-------------------")
+            # print("v_e:{}".format(v_e))
+            # print("v_eを含むエッジ:{}".format(e))
+            # print("route:{}".format(route))
+            # print("Path:{}".format(Path))
 
             # eの端点のv_eでない方を新たにv_eとする
             v_e = e[0] if v_e == e[1] else e[1]
             # print("次の端点:{}".format(v_e))
 
-            # 次の端点が0だった場合
-            if(v_e == 0):
+            if(heiro == True):
+                if(v_e == v_e_1):
+                    Path.append(R)
+                    v_e_1 = 0
+                    R=[]
+                    find_flag = True
+            elif(v_e == 0):
                 Path.append(R)
                 R = []
                 find_flag = True
-            # 閉路探索中に最初のノードを発見した場合
-            if(heiro == True and v_e == v_e_1):
-                Path.append(R)
-                v_e_1 = 0
-                R=[]
-                find_flag = True
-    print(Path)
+
+            # 次の端点が0だった場合
+            # if(v_e == 0):
+            #     Path.append(R)
+            #     R = []
+            #     find_flag = True
+            # # 閉路探索中に最初のノードを発見した場合
+            # if(heiro == True and v_e == v_e_1):
+            #     Path.append(R)
+            #     v_e_1 = 0
+            #     R=[]
+            #     find_flag = True
+    # print(Path)
     return(Path)
+
+
+
+"""
+3次元のエッジリストから，2次元リストに変換する
+@INPUT:
+    path: ルート情報を含むエッジの3次元リスト
+@OUTPUT:
+    route: エッジの2次元リスト
+"""
+def pathToRoute(path):
+    EdgeList = []
+    for edge in path:
+        for j in edge:
+            EdgeList.append(j)
+    return EdgeList
+
+
+
+
+"""
+デポを含まない閉路が存在するかどうか判定し，
+そのインデックスを返す
+@INPUT:
+    path: ルート情報を持つ3次元リスト
+@OUTPUT:
+    I: 部分順回路のインデックスリスト
+"""
+def isHeiro(path):
+    I = []
+    for i, r in enumerate(path):
+        # print(r)
+        if 0 in np.unique(r):
+            pass
+        else:
+            I.append(i)
+    print("部分巡回路のインデックス:{}".format(I))
+    if I == []:
+        return 0
+    else:
+        return I
 
 
 
@@ -496,42 +859,20 @@ def createGraphList():
 """
 グラフをプロットする
 """
-def graphPlot(G, N, e):
+def graphPlot(G, N, edgeList):
     E = []
     edge_labels = {}
     sum_cost = 0
     labels = {}
 
-    # for i in range(num_shelter):
-    #     for j in range(num_shelter):
-    #         if(x[i][j] == 1):
-    #             E.append((i, j))
-    #             edge_labels[(i, j)] = cost[i][j]
-
-    for edge in e:
-        for i, node in enumerate(edge):
-            if i == 0:
-                E.append([0, node])
-                edge_labels[(0, node)] = cost[0][node]
-                pre_node = node
-                if len(edge) == 1:
-                    E.append([node, 0])
-                    edge_labels[(node, 0)] = cost[node][0]
-            else:
-                E.append([pre_node, node])
-                edge_labels[(pre_node, node)] = cost[pre_node][node]
-                pre_node = node
-                if i == len(edge)-1:
-                    E.append([node, 0])
-                    edge_labels[(node, 0)] = cost[node][0]
+    for e in edgeList:
+        E.append(e)
+        edge_labels[(e[0], e[1])] = cost[e[0]][e[1]]
 
     for i in range(num_shelter):
         # labels[i] = df.ix[i].d
         labels[i] = i
 
-
-    E = test
-    print(E)
     G.add_nodes_from(N)
     G.add_edges_from(E)
     nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
@@ -557,7 +898,7 @@ if __name__ == "__main__":
 
     df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
-    num_shelter = 11
+    # num_shelter = 31
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -575,32 +916,27 @@ if __name__ == "__main__":
 
     print("ルート数：{}".format(len(route)))
 
+    # セービング方で得られた解にデポをつける
     path = createEdgeSet(route)
     # localSearch(path)
 
-
-    test = Neighborhoods(7, path, "2opt")
-    print(test)
-
-
-    test = [[0,1], [2, 1], [2, 3], [3, 0], [4, 5], [5, 6], [4, 0], [6, 0], [7, 8], [8, 9], [7, 9]]
-    path = routeToPath(test)
+    # test = [[0,1], [2, 1], [2, 3], [3, 0], [4, 5], [5, 6], [4, 0], [6, 0], \
+    #         [7, 8], [8, 9], [7, 9], [10, 11], [12, 11], [12, 10]]
+    # path = routeToPath(test)
+    # isHeiro(path)
 
 
+    # route = Neighborhoods(4, path, "10inter")
+    print(route)
+    for i in range(1, num_shelter):
+        prePath = copy.deepcopy(path)
+        local_route = Neighborhoods(i, path, "2opt")
+        path = routeToPath(local_route)
+        if path == False:
+            path = prePath
+            # print(prePath)
+    route = pathToRoute(path)
 
-    # for i in range(1, num_shelter):
-    #     local_route = Neighborhoods(i, path, "2opt")
-    #     path = routeToPath(local_route)
-
-
-
-
-    # EdgeSet = []
-    # for edge in path:
-    #     for j in edge:
-    #         EdgeSet.append(j)
-    # test = EdgeSet
-
-
-    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    # graphPlot(G, N, route)
+    print(path)
+    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    graphPlot(G, N, route)
