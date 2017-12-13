@@ -34,6 +34,9 @@ VEHICLE = 3
 CAPACITY = 40
 # セービング値の効果をコントロールする係数
 LAMBDA = 0.5
+# N_near()関数で，どこまで近くのノードに局所探索するか
+NEAR = 5
+
 
 
 """
@@ -261,8 +264,8 @@ def Neighborhoods(v, path, neighbor):
     for edge in path:
         for j in edge:
             EdgeSet.append(j)
-    print(EdgeSet)
     DefaultEdgeSet = copy.deepcopy(EdgeSet)
+    # print("デフォルト:{}".format(DefaultEdgeSet))
 
     # 渡されたノードvに繋がるエッジ2つ
     link_v = [i for i in EdgeSet if (v in i)]
@@ -273,13 +276,13 @@ def Neighborhoods(v, path, neighbor):
     # print("link_v[1]:{}".format(link_v[1])) # ノードvを出るエッジ
 
     # ノードvからnearだけ近いノードをそれぞれwとして選ぶ
-    for w in N_near(v, 5):
+    for w in N_near(v, NEAR):
 
         link_w = [i for i in EdgeSet if (w in i)]
 
         if(len(link_v) < 2 or len(link_w) < 2):
-            print("ノードに対するエッジが2つない")
-            EdgeSet = DefaultEdgeSet
+            # print("ノードに対するエッジが2つない")
+            EdgeSet = copy.deepcopy(DefaultEdgeSet)
             continue
 
         # 同じエッジを選ぶ可能性があるものは排除
@@ -301,7 +304,7 @@ def Neighborhoods(v, path, neighbor):
         (1,0)Interchange
         """
         if neighbor == "10inter":
-            print("(1,0)Interchange①やるよー")
+            # print("(1,0)Interchange①やるよー")
             """
             (1,0)Interchange①
             """
@@ -317,23 +320,27 @@ def Neighborhoods(v, path, neighbor):
 
             if l1 + l2 + l3 > l4 + l5 + l6:
                 print("10inter① " + str(v) + ":" + str(w) + "適用")
-                EdgeSet.remove(link_w[0]) #-を含む方
-                EdgeSet.remove(link_v[0])
-                EdgeSet.remove(link_v[1]) #+を含む方
+                try:
+                    EdgeSet.remove(link_w[0]) #-を含む方
+                    EdgeSet.remove(link_v[0])
+                    EdgeSet.remove(link_v[1]) #+を含む方
 
-                EdgeSet.append([w_minus, v])
-                EdgeSet.append([v, w])
-                EdgeSet.append([v_minus, v_plus])
+                    EdgeSet.append([w_minus, v])
+                    EdgeSet.append([v, w])
+                    EdgeSet.append([v_minus, v_plus])
+                except ValueError:
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                    continue
 
                 # [n, n]のようなエッジを持たないように修正
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
 
                 # デポを含まない巡回路ができた場合
                 if(isHeiro(routeToPath(EdgeSet)) != 0):
-                    EdgeSet = DefaultEdgeSet
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
                     continue
                 return EdgeSet
 
@@ -351,23 +358,27 @@ def Neighborhoods(v, path, neighbor):
 
             if l1 + l2 + l3 > l4 + l5 + l6:
                 print("10inter② " + str(v) + ":" + str(w) + "適用")
-                EdgeSet.remove(link_w[1]) #+を含む方
-                EdgeSet.remove(link_v[0])
-                EdgeSet.remove(link_v[1]) #+を含む方
+                try:
+                    EdgeSet.remove(link_w[1]) #+を含む方
+                    EdgeSet.remove(link_v[0])
+                    EdgeSet.remove(link_v[1]) #+を含む方
 
-                EdgeSet.append([w_plus, v])
-                EdgeSet.append([v, w])
-                EdgeSet.append([v_minus, v_plus])
+                    EdgeSet.append([w_plus, v])
+                    EdgeSet.append([v, w])
+                    EdgeSet.append([v_minus, v_plus])
+                except ValueError:
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                    continue
 
                 # [n, n]のようなエッジを持たないように修正
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
 
                 # デポを含まない巡回路ができた場合
                 if(isHeiro(routeToPath(EdgeSet)) != 0):
-                    EdgeSet = DefaultEdgeSet
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
                     continue
                 return EdgeSet
 
@@ -375,7 +386,7 @@ def Neighborhoods(v, path, neighbor):
         (0,1)Interchange
         """
         if neighbor == "01inter":
-            print("(0,1)Interchange①やるよー")
+            # print("(0,1)Interchange①やるよー")
             """
             (0,1)Interchange①
             """
@@ -391,23 +402,27 @@ def Neighborhoods(v, path, neighbor):
 
             if l1 + l2 + l3 > l4 + l5 + l6:
                 print("01inter① " + str(v) + ":" + str(w) + "適用")
-                EdgeSet.remove(link_w[0]) #-を含む方
-                EdgeSet.remove(link_w[1])
-                EdgeSet.remove(link_v[0]) #-を含む方
+                try:
+                    EdgeSet.remove(link_w[0]) #-を含む方
+                    EdgeSet.remove(link_w[1])
+                    EdgeSet.remove(link_v[0]) #-を含む方
 
-                EdgeSet.append([w_minus, w_plus])
-                EdgeSet.append([v_minus, w])
-                EdgeSet.append([v, w])
+                    EdgeSet.append([w_minus, w_plus])
+                    EdgeSet.append([v_minus, w])
+                    EdgeSet.append([v, w])
+                except ValueError:
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                    continue
 
                 # [n, n]のようなエッジを持たないように修正
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
 
                 # デポを含まない巡回路ができた場合
                 if(isHeiro(routeToPath(EdgeSet)) != 0):
-                    EdgeSet = DefaultEdgeSet
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
                     continue
                 return EdgeSet
 
@@ -425,23 +440,26 @@ def Neighborhoods(v, path, neighbor):
 
             if l1 + l2 + l3 > l4 + l5 + l6:
                 print("01inter② " + str(v) + ":" + str(w) + "適用")
-                EdgeSet.remove(link_w[0]) #-を含む方
-                EdgeSet.remove(link_w[1])
-                EdgeSet.remove(link_v[1]) #-を含む方
+                try:
+                    EdgeSet.remove(link_w[0]) #-を含む方
+                    EdgeSet.remove(link_w[1])
+                    EdgeSet.remove(link_v[1]) #-を含む方
 
-                EdgeSet.append([w_minus, w_plus])
-                EdgeSet.append([v_plus, w])
-                EdgeSet.append([v, w])
-
+                    EdgeSet.append([w_minus, w_plus])
+                    EdgeSet.append([v_plus, w])
+                    EdgeSet.append([v, w])
+                except ValueError:
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                    continue
                 # [n, n]のようなエッジを持たないように修正
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
 
                 # デポを含まない巡回路ができた場合
                 if(isHeiro(routeToPath(EdgeSet)) != 0):
-                    EdgeSet = DefaultEdgeSet
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
                     continue
                 return EdgeSet
 
@@ -449,7 +467,7 @@ def Neighborhoods(v, path, neighbor):
         (1,1)Interchange
         """
         if neighbor == "11inter":
-            print("(1,1)Interchangeやるよー")
+            # print("(1,1)Interchangeやるよー")
 
             """
             (1,1)Interchange①
@@ -465,15 +483,19 @@ def Neighborhoods(v, path, neighbor):
                         route_num = i
                         break
             # print("{}を含むルートは:{}".format(w, path[route_num]))
+            # if(len(path[route_num]) < 3):
+            #     continue
+
             # ノードw-を持つリストを作る
             w_minus2list = [x for x in path[route_num] \
                             if(w_minus in x and x != link_w[0])]
-            # リストからノードw-出ない方をノードw--として選択
-            w_minus_minus = w_minus2list[0][0] if w_minus2list[0][1] == w_minus \
-            else w_minus2list[0][1]
-            # print("リスト:{}".format(w_minus2list[0]))
-            # print("w-:{}".format(w_minus))
-            # print("w--:{}".format(w_minus_minus))
+
+            try:
+                # リストからノードw-でない方をノードw--として選択
+                w_minus_minus = w_minus2list[0][0] if w_minus2list[0][1] == w_minus \
+                else w_minus2list[0][1]
+            except IndexError:
+                continue
 
             # 同じエッジを選ぶ可能性があるものは排除
             if link_v[0] == w_minus2list[0] or link_v[1] == w_minus2list[0] \
@@ -494,30 +516,35 @@ def Neighborhoods(v, path, neighbor):
 
             if l1 + l2 + l3 + l4 > l5 + l6 + l7 + l8:
                 print("11inter① " + str(v) + ":" + str(w) + "適用")
-                print("EdgeSet:{}".format(sorted(EdgeSet)))
-                print("w_minus2list[0]:{}".format(w_minus2list[0]))
-                print("link_w[0]:{}".format(link_w[0]))
-                print("link_v[0]:{}".format(link_v[0]))
-                EdgeSet.remove(w_minus2list[0]) #--を含む方
-                EdgeSet.remove(link_w[0])
-                EdgeSet.remove(link_v[0])
-                EdgeSet.remove(link_v[1])
 
-                EdgeSet.append([w_minus_minus, v])
-                EdgeSet.append([v_minus, v_plus])
-                EdgeSet.append([v_minus, w_minus])
-                EdgeSet.append([v, w])
+                try:
+                    # print("w-のリスト:{}".format(w_minus2list[0]))
+                    # print("link_w[0]:{}".format(link_w[0]))
+                    # print("link_v[0]:{}".format(link_v[0]))
+                    # print("link_v[1]:{}".format(link_v[1]))
+                    EdgeSet.remove(w_minus2list[0]) #--を含む方
+                    EdgeSet.remove(link_w[0])
+                    EdgeSet.remove(link_v[0])
+                    EdgeSet.remove(link_v[1])
+
+                    EdgeSet.append([w_minus_minus, v])
+                    EdgeSet.append([w_minus, v_plus])
+                    EdgeSet.append([v_minus, w_minus])
+                    EdgeSet.append([v, w])
+                except ValueError:
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                    continue
 
                 # [n, n]のようなエッジを持たないように修正
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
 
                 # デポを含まない巡回路ができた場合
-                if not(routeToPath(EdgeSet)):
-                    print("あいうえお")
-                    EdgeSet = DefaultEdgeSet
+                if(isHeiro(routeToPath(EdgeSet)) != 0):
+                    # print("リセット1")
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
                     continue
                 return EdgeSet
 
@@ -528,12 +555,16 @@ def Neighborhoods(v, path, neighbor):
             """
             w++を求めるステップ
             """
-            # ノードw-を持つリストを作る
+            # ノードw+を持つリストを作る
             w_plus2list = [x for x in path[route_num] \
                             if(w_plus in x and x != link_w[1])]
-            # リストからノードw+でない方をノードw++として選択
-            w_plus_plus = w_plus2list[0][1] if w_plus2list[0][0] == w_plus \
-            else w_plus2list[0][0]
+
+            try:
+                # リストからノードw+でない方をノードw++として選択
+                w_plus_plus = w_plus2list[0][1] if w_plus2list[0][0] == w_plus \
+                else w_plus2list[0][0]
+            except IndexError:
+                continue
 
             # print("{}を含むルートは:{}".format(w, path[route_num]))
             # print("リスト:{}".format(w_plus2list[0]))
@@ -558,26 +589,30 @@ def Neighborhoods(v, path, neighbor):
 
             if l1 + l2 + l3 + l4 > l5 + l6 + l7 + l8:
                 print("11inter② " + str(v) + ":" + str(w) + "適用")
-                EdgeSet.remove(w_plus2list[0]) #--を含む方
-                EdgeSet.remove(link_w[1])
-                EdgeSet.remove(link_v[0])
-                EdgeSet.remove(link_v[1])
+                try:
+                    EdgeSet.remove(w_plus2list[0]) #++を含む方
+                    EdgeSet.remove(link_w[1])
+                    EdgeSet.remove(link_v[0])
+                    EdgeSet.remove(link_v[1])
 
-                EdgeSet.append([v, w_plus_plus])
-                EdgeSet.append([v_minus, w_plus])
-                EdgeSet.append([v_plus, w_plus])
-                EdgeSet.append([v, w])
+                    EdgeSet.append([v, w_plus_plus])
+                    EdgeSet.append([v_minus, w_plus])
+                    EdgeSet.append([v_plus, w_plus])
+                    EdgeSet.append([v, w])
+                except ValueError:
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                    continue
 
                 # [n, n]のようなエッジを持たないように修正
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
 
                 # デポを含まない巡回路ができた場合
-                if not(routeToPath(EdgeSet)):
-                    print("あいうえお")
-                    EdgeSet = DefaultEdgeSet
+                if(isHeiro(routeToPath(EdgeSet)) != 0):
+                    # print("リセット２")
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
                     continue
                 return EdgeSet
 
@@ -588,7 +623,7 @@ def Neighborhoods(v, path, neighbor):
             """
             2-opt①
             """
-            print("2opt①やるよー")
+            # print("2opt①やるよー")
             l1 = cost[v_minus][v] # 元のエッジ
             l2 = cost[w_minus][w] # 元のエッジ
             l3 = cost[v][w]
@@ -596,26 +631,30 @@ def Neighborhoods(v, path, neighbor):
 
             if l1 + l2 > l3 + l4:
                 print("2-opt① " + str(v) + ":" + str(w) + "適用")
-                EdgeSet.remove(link_w[0])
-                EdgeSet.remove(link_v[0])
-                EdgeSet.append([v, w])
-                EdgeSet.append([v_minus, w_minus])
+                try:
+                    EdgeSet.remove(link_w[0])
+                    EdgeSet.remove(link_v[0])
+                    EdgeSet.append([v, w])
+                    EdgeSet.append([v_minus, w_minus])
+                except ValueError:
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                    continue
 
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
 
                 # デポを含まない巡回路ができた場合
                 if(isHeiro(routeToPath(EdgeSet)) != 0):
-                    EdgeSet = DefaultEdgeSet
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
                     continue
                 return EdgeSet
 
             """
             2-opt④
             """
-            print("2opt④やるよー")
+            # print("2opt④やるよー")
             l1 = cost[v][v_plus] # 元のエッジ
             l2 = cost[w][w_plus] # 元のエッジ
             l3 = cost[v][w]
@@ -623,19 +662,23 @@ def Neighborhoods(v, path, neighbor):
 
             if l1 + l2 > l3 + l4:
                 print("2-opt④ " + str(v) + ":" + str(w) + "適用")
-                EdgeSet.remove(link_v[1])
-                EdgeSet.remove(link_w[1])
-                EdgeSet.append([v, w])
-                EdgeSet.append([v_plus, w_plus])
+                try:
+                    EdgeSet.remove(link_v[1])
+                    EdgeSet.remove(link_w[1])
+                    EdgeSet.append([v, w])
+                    EdgeSet.append([v_plus, w_plus])
+                except ValueError:
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                    continue
 
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
 
                 # デポを含まない巡回路ができた場合
                 if(isHeiro(routeToPath(EdgeSet)) != 0):
-                    EdgeSet = DefaultEdgeSet
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
                     continue
                 return EdgeSet
 
@@ -651,7 +694,7 @@ def Neighborhoods(v, path, neighbor):
                 """
                 2-opt②
                 """
-                print("2opt②やるよー")
+                # print("2opt②やるよー")
                 l1 = cost[v_minus][v] # 元のエッジ
                 l2 = cost[w][w_plus] # 元のエッジ
                 l3 = cost[v][w]
@@ -659,26 +702,30 @@ def Neighborhoods(v, path, neighbor):
 
                 if l1 + l2 > l3 + l4:
                     print("2-opt② " + str(v) + ":" + str(w) + "適用")
-                    EdgeSet.remove(link_v[0])
-                    EdgeSet.remove(link_w[1])
-                    EdgeSet.append([v, w])
-                    EdgeSet.append([v_minus, w_plus])
+                    try:
+                        EdgeSet.remove(link_v[0])
+                        EdgeSet.remove(link_w[1])
+                        EdgeSet.append([v, w])
+                        EdgeSet.append([v_minus, w_plus])
+                    except ValueError:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
 
                     for es in EdgeSet:
                         if es[0] == es[1]:
-                            EdgeSet = DefaultEdgeSet
+                            EdgeSet = copy.deepcopy(DefaultEdgeSet)
                             continue
 
                     # デポを含まない巡回路ができた場合
                     if(isHeiro(routeToPath(EdgeSet)) != 0):
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
                     return EdgeSet
 
                 """
                 2-opt③
                 """
-                print("2opt③やるよー")
+                # print("2opt③やるよー")
                 l1 = cost[v][v_plus] # 元のエッジ
                 l2 = cost[w_minus][w] # 元のエッジ
                 l3 = cost[v][w]
@@ -686,19 +733,22 @@ def Neighborhoods(v, path, neighbor):
 
                 if l1 + l2 > l3 + l4:
                     print("2-opt③ " + str(v) + ":" + str(w) + "適用")
-                    EdgeSet.remove(link_v[1])
-                    EdgeSet.remove(link_w[0])
-                    EdgeSet.append([v, w])
-                    EdgeSet.append([v_plus, w_minus])
-
+                    try:
+                        EdgeSet.remove(link_v[1])
+                        EdgeSet.remove(link_w[0])
+                        EdgeSet.append([v, w])
+                        EdgeSet.append([v_plus, w_minus])
+                    except ValueError:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
                     # [n, n]のようなエッジを持たないように修正
                     for es in EdgeSet:
                         if es[0] == es[1]:
-                            EdgeSet = DefaultEdgeSet
+                            EdgeSet = copy.deepcopy(DefaultEdgeSet)
                             continue
                     # デポを含まない巡回路ができた場合
                     if(isHeiro(routeToPath(EdgeSet)) != 0):
-                        EdgeSet = DefaultEdgeSet
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
                         continue
                     return EdgeSet
     return EdgeSet
@@ -816,7 +866,7 @@ def isHeiro(path):
             pass
         else:
             I.append(i)
-    print("部分巡回路のインデックス:{}".format(I))
+    # print("部分巡回路のインデックス:{}".format(I))
     if I == []:
         return 0
     else:
@@ -898,7 +948,7 @@ if __name__ == "__main__":
 
     df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
-    # num_shelter = 31
+    num_shelter = 31
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -925,16 +975,24 @@ if __name__ == "__main__":
     # path = routeToPath(test)
     # isHeiro(path)
 
+    random_order = [i for i in range(1, num_shelter)]
+    random.shuffle(random_order)
 
-    # route = Neighborhoods(4, path, "10inter")
     print(route)
-    for i in range(1, num_shelter):
+    for n, i in enumerate(random_order):
         prePath = copy.deepcopy(path)
+        local_route = Neighborhoods(i, path, "10inter")
+        path = routeToPath(local_route)
+        local_route = Neighborhoods(i, path, "11inter")
+        path = routeToPath(local_route)
+        local_route = Neighborhoods(i, path, "01inter")
+        path = routeToPath(local_route)
         local_route = Neighborhoods(i, path, "2opt")
         path = routeToPath(local_route)
+
         if path == False:
-            path = prePath
-            # print(prePath)
+            path = copy.deepcopy(prePath)
+        print("{}回目".format(n))
     route = pathToRoute(path)
 
     print(path)
