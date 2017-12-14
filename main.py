@@ -213,15 +213,48 @@ def pathToRoute(path):
 
 
 """
-【家族内淘汰】
-親P_Aとその子の中から一番良い個体を選択する
+ペナルティ関数による評価を行う
 @INPUT:
-    ga : 選択を行うgenomClassの配列
+    route: 解の２次元リスト
+    option: どのように評価するか
+        1: ペナルティ関数による評価
+        0: 総移動コストのみの評価
 @OUTPUT:
-    選択処理をした一定のエリートgenomClass
+    F_p: 関数による評価値
 """
-def select(ga, elite):
-    pass
+def penaltyFunction(route, option):
+    F_p = 0
+    F = 0
+    F_c = 0
+    F_d = 0
+    R_demands = 0
+    R_cost = 0
+    path = routeToPath(route)
+    # ルート総距離
+    for e in route:
+        F += cost[e[0]][e[1]]
+
+    if option == 0:
+        return F
+
+    for edges in path:
+        nodes = np.unique(edges)
+        for n in nodes: # 各ルートの合計需要
+            R_demands += df.ix[n].d
+        F_c += abs(R_demands - CAPACITY) # ルート内の需要超過
+        R_demands = 0
+
+        for e in edges:
+            R_cost += cost[e[0]][e[1]]
+        if R_cost <= D:
+            R_cost = 0
+            # abs(R_cost)
+        F_d += R_cost - D
+        R_cost = 0
+
+    # ペナルティ関数
+    F_p = F + (ALPHA * F_c) + (BETA * F_d)
+    return F_p
 
 
 """
