@@ -17,6 +17,8 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
+import time
+import copy
 
 # 遺伝子集団の長さ
 MAX_GENOM_LIST = 100
@@ -194,6 +196,20 @@ def routeToPath(route):
                 find_flag = True
     # print(Path)
     return(Path)
+
+"""
+3次元のエッジリストから，2次元リストに変換する
+@INPUT:
+    path: ルート情報を含むエッジの3次元リスト
+@OUTPUT:
+    route: エッジの2次元リスト
+"""
+def pathToRoute(path):
+    EdgeList = []
+    for edge in path:
+        for j in edge:
+            EdgeList.append(j)
+    return EdgeList
 
 
 """
@@ -400,33 +416,15 @@ def createGraphList():
 """
 グラフをプロットする
 """
-def graphPlot(G, N, edgeList):
+def graphPlot(G, N, edgeList, isLast):
     E = []
     edge_labels = {}
     sum_cost = 0
     labels = {}
 
-
     for e in edgeList:
         E.append(e)
         edge_labels[(e[0], e[1])] = cost[e[0]][e[1]]
-
-    # for edge in e:
-    #     for i, node in enumerate(edge):
-    #         if i == 0:
-    #             E.append([0, node])
-    #             edge_labels[(0, node)] = cost[0][node]
-    #             pre_node = node
-    #             if len(edge) == 1:
-    #                 E.append([node, 0])
-    #                 edge_labels[(node, 0)] = cost[node][0]
-    #         else:
-    #             E.append([pre_node, node])
-    #             edge_labels[(pre_node, node)] = cost[pre_node][node]
-    #             pre_node = node
-    #             if i == len(edge)-1:
-    #                 E.append([node, 0])
-    #                 edge_labels[(node, 0)] = cost[node][0]
 
     for i in range(num_shelter):
         # labels[i] = df.ix[i].d
@@ -434,8 +432,10 @@ def graphPlot(G, N, edgeList):
 
     G.add_nodes_from(N)
     G.add_edges_from(E)
-    nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
-    nx.draw_networkx_labels(G, pos, labels, font_size=6) # デフォルト12
+    nx.draw_networkx_nodes(G, pos, node_size=80, node_color="r")
+    nx.draw_networkx_edges(G, pos, width=1)
+    # nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
+    nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
 
     plt.legend()
@@ -445,11 +445,16 @@ def graphPlot(G, N, edgeList):
     plt.ylim(0, 70)
     # plt.axis('off')
     plt.title('Delivery route')
-    plt.savefig("./output/" + filename +".png")  # save as png
     # plt.grid()
-    plt.show()
 
-    return(0)
+    if isLast == 0:
+        plt.pause(0.01)
+        plt.clf()
+    else:
+        print("描画終了")
+        plt.savefig("./output/" + filename +".png")  # save as png
+        plt.show()
+        return(0)
 
 
 if __name__ == '__main__':
@@ -501,9 +506,13 @@ if __name__ == '__main__':
             """
             交叉：EAX
             """
+            # EAXのステップ1~2を処理
             # C = preEAX(P_A, P_B)
             # for j in range(MAX_CHILDREN):
             #     c.append(edgeAssemblyCrossover(C))
+
+            # EAXのステップ3~5
+
 
 
             """
@@ -522,26 +531,6 @@ if __name__ == '__main__':
                 current_generation_individual_group[order[i]].setGenom(c[min_idx])
                 current_generation_individual_group[order[i]].setEvaluation(c_cost[min_idx])
 
-
-            # EAXのステップ1~2を処理する
-            # C = preEAX(P_A, P_B)
-            # for i, x in enumerate(C):
-            #     print("C{}:{}".format(i, x))
-            #
-            # # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
-            # for j in range(MAX_CHILDREN):
-            #     edgeAssemblyCrossover() #GAクラスに子個体情報も持たせる
-
-        """
-        #現行世代個体集団の遺伝子を評価し，genomClassに代入
-        for i in range(MAX_GENOM_LIST):
-            evaluation_result, x = evaluation(current_generation_individual_group[i])
-            current_generation_individual_group[i].setEvaluation(evaluation_result)
-            current_generation_individual_group[i].setEdge(x) # 移動エッジ行列をgenomClassに保存
-        # print("エッジ確認")
-        # print(current_generation_individual_group[4].getEdge())
-        """
-
         # 今世代の個体適用度を配列化する
         fits = [i.getEvaluation() for i in current_generation_individual_group]
         min_ = min(fits) # 最小値を求める
@@ -552,6 +541,8 @@ if __name__ == '__main__':
 
         print("====第{}世代====".format(count_))
         print("最も優れた個体の総移動コスト:{}".format(min_))
+        X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+        graphPlot(G, N, current_generation_individual_group[min_idx].getEdge(), 0)
         # break
         # for i in range(MAX_GENOM_LIST):
         #     print("遺伝子<{}>:{}".format(i + 1, current_generation_individual_group[i].getEvaluation()))
@@ -563,5 +554,5 @@ if __name__ == '__main__':
 
 
     X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, current_generation_individual_group[min_idx].getEdge())
+    graphPlot(G, N, current_generation_individual_group[min_idx].getEdge(), 1)
     result_df.to_csv("./output/" + filename + "_result.csv", index=False)

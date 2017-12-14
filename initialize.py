@@ -934,11 +934,10 @@ def graphPlot(G, N, edgeList, isLast):
     plt.legend()
     plt.xlabel("x")
     plt.ylabel("y")
-    plt.xlim(0, 70)
-    plt.ylim(0, 70)
+    # plt.xlim(0, 70)
+    # plt.ylim(0, 70)
     # plt.axis('off')
     plt.title('Delivery route')
-    # plt.savefig("./output/" + filename +".png")  # save as png
     # plt.grid()
 
     if isLast == 0:
@@ -989,7 +988,7 @@ if __name__ == "__main__":
     print(route)
     for n, i in enumerate(random_order):
         prePath = copy.deepcopy(path)
-        # # local_route = Neighborhoods(i, path, "10inter")
+        # local_route = Neighborhoods(i, path, "10inter")
         # path = routeToPath(local_route)
         # local_route = Neighborhoods(i, path, "11inter")
         # path = routeToPath(local_route)
