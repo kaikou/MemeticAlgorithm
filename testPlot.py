@@ -7,46 +7,43 @@ matplotlibでリアルタイムプロットする例
 
 無限にsin関数をplotし続ける
 """
-from __future__ import unicode_literals, print_function
-
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-def pause_plot():
-    fig, ax = plt.subplots(1, 1)
-    x = np.arange(-np.pi, np.pi, 0.1)
-    y = np.sin(x)
-    # print(fig)
-    print(ax)
-    # 初期化的に一度plotしなければならない
-    # そのときplotしたオブジェクトを受け取る受け取る必要がある．
-    # listが返ってくるので，注意
-    lines, = ax.plot(x, y)
+"""sin波をリアルタイムプロットする関数"""
+def waveplot(f, v):    # f:周波数[Hz]，v:電圧[％]
+    pi = math.pi
+    t = 1 / f
+    plt.title('CurrentFrequency')
+    plt.ylabel('VoltageRatio')
+    plt.xlabel('Range:0-1 [s]')
+    x = np.linspace(0, 2*pi, 1000)  # 0から2πまでの範囲を1000分割して0-1000で並べる
+    plt.ylim(-100, 100)
+    plt.xlim(0, 1000)
+    y = v*(np.sin(x * f))
 
-    # ここから無限にplotする
-    while True:
-        # plotデータの更新
-        x += 0.1
-        y = np.sin(x)
+    plt.plot(y, color='limegreen')  # デフォルト(指定無し)だと水色
+    plt.pause(0.01)  # 引数はsleep時間
+    print("周波数", round(f, 3), "[Hz]・", "電圧", round(v, 2), "[％]・", "周期", round(t, 4), "[s]")
 
-        # 描画データを更新するときにplot関数を使うと
-        # lineオブジェクトが都度増えてしまうので，注意．
-        #
-        # 一番楽なのは上記で受け取ったlinesに対して
-        # set_data()メソッドで描画データを更新する方法．
-        lines.set_data(x, y)
+    # 関数の最後で消去しないとうまくプロットされない
+    plt.cla()  # 現在描写されているグラフを消去
 
-        # set_data()を使うと軸とかは自動設定されないっぽいので，
-        # 今回の例だとあっという間にsinカーブが描画範囲からいなくなる．
-        # そのためx軸の範囲は適宜修正してやる必要がある．
-        ax.set_xlim((x.min(), x.max()))
+# 電圧・周波数の初期値
+v = 0
+f = 0
 
-        # 一番のポイント
-        # - plt.show() ブロッキングされてリアルタイムに描写できない
-        # - plt.ion() + plt.draw() グラフウインドウが固まってプログラムが止まるから使えない
-        # ----> plt.pause(interval) これを使う!!! 引数はsleep時間
-        #plt.pause(.01)
+v1 = float(input("電圧変化率(100msでいくら増加するか)"))
+f1 = float(input("周波数変化率(100msでいくら増加するか)"))
+# plt.cla()で現在描写されているグラフを消去する
+while 0 <= v < 100 :
+    v += v1
+    f += f1
+    waveplot(f, v)
 
-if __name__ == "__main__":
-    pause_plot()
+# while 0 <= v <= 101 :
+#     v -= v1
+#     f -= f1
+#     waveplot(f, v)
