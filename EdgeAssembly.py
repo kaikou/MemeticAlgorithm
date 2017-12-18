@@ -226,16 +226,21 @@ def EAX(x_A, x_B):
                 s = 0
                 R_A = sorted([x for x in R_A if (x and x in G_AB)])
                 ABflag = True
-                # print("C:{}".format(C))
-                # if(len(R_A) % 2 == 1 or len(R_B) % 2 == 1):
-                #     break
+
 
     for i, x in enumerate(C):
         print("C{}:{}".format(i, x))
 
+
+    """
+    ステップ3:E-setを構成する
+    """
     E_set = random.choice(C) # Single戦略
     print("E-set:{}".format(E_set))
 
+    """
+    ステップ4:E-setを用いて中間個体を生成する
+    """
     # E_AからE-setに含まれるE_Aに属する枝を取り除く
     interA = [x for x in E_A if not(x and x in E_set)]
     # E-setに含まれるE_Bに属する枝を付け加える
@@ -243,6 +248,12 @@ def EAX(x_A, x_B):
     intermediate = interA + interB
 
     print("中間:{}".format(intermediate))
+
+    """
+    ステップ5:部分順回路が含まれる場合，結合する
+    """
+
+
     return intermediate
 
 
@@ -255,33 +266,92 @@ def isRoute(edgeList, v_e_1, v_e):
         return 0
 
 
+"""
+2次元のエッジリストから，各閉路毎にエッジを持つ3次元リストに変換する
+@INPUT:
+    route: エッジの２次元リスト
+@OUTPUT:
+    Path: ルート情報を含むエッジの3次元リスト
+"""
+def routeToPath(route):
+    route = sorted(route)
+    Path = []
+    R = []
+    v_e_1 = 0
+
+    while(len(route)):
+        e = route[0]
+        find_flag = False
+        heiro = False
+        # エッジ端のどちらかに0を含むか
+        if e[0] == 0 or e[1] == 0:
+            R.append(e)
+            route.remove(e)
+            # 0じゃない方をv_eにセット
+            v_e = e[1] if e[0] == 0 else e[0]
+        else: # 0を含まない閉路を発見
+            R.append(e)
+            route.remove(e)
+            v_e = e[1]
+            v_e_1 = e[0]
+            heiro = True
+
+        while(not(find_flag)):
+            # v_eを含むエッジをroute内から探しeにセット
+            e = random.choice(list(filter(lambda x: v_e in x, route)))
+            R.append(e)
+            route.remove(e)
+
+            # eの端点のv_eでない方を新たにv_eとする
+            v_e = e[0] if v_e == e[1] else e[1]
+            # print("次の端点:{}".format(v_e))
+
+            # 次の端点が0だった場合
+            if(v_e == 0):
+                Path.append(R)
+                R = []
+                find_flag = True
+            # 閉路探索中に最初のノードを発見した場合
+            if(heiro == True and v_e == v_e_1):
+                Path.append(R)
+                v_e_1 = 0
+                R=[]
+                find_flag = True
+    print(Path)
+    return(Path)
 
 
 """
 グラフをプロットする
 """
-def graphPlot(G, N, x):
+def graphPlot(G, N, path):
     E = []
     edge_labels = {}
     sum_cost = 0
     labels = {}
 
-    for i in range(num_shelter):
-        for j in range(num_shelter):
-            if(x[i][j] == 1):
-                E.append((i, j))
+    # for i in range(num_shelter):
+    #     for j in range(num_shelter):
+    #         if(x[i][j] == 1):
+    #             E.append((i, j))
                 # edge_labels[(i, j)] = cost[i][j]
+
+    for edge in path:
+        for j in edge:
+            E.append(j)
+            edge_labels[(j[0], j[1])] = cost[j[0]][j[1]]
+
 
     for i in range(num_shelter):
         # labels[i] = df.ix[i].d
         labels[i] = i
 
 
-    E = intermediate
+    # E = intermediate
     G.add_nodes_from(N)
     G.add_edges_from(E)
     nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=200)
-    nx.draw_networkx_labels(G, pos, labels, font_size=12)
+    nx.draw_networkx_labels(G, pos, label=labels, font_size=12)
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
 
     plt.legend()
@@ -324,12 +394,13 @@ if __name__ == '__main__':
 
     # G_AB, edgelist = EAX(x_A, x_B)
     intermediate = EAX(x_A, x_B)
+    child = routeToPath(intermediate)
     # print(G_AB)
     # print(edgelist)
 
-    # X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    # graphPlot(G, N, G_AB)
-    X, Y, N, pos, G = createGraphList()
-    graphPlot(G, N, x_A)
+    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
+    graphPlot(G, N, child)
+    # X, Y, N, pos, G = createGraphList()
+    # graphPlot(G, N, x_A)
     # X, Y, N, pos, G = createGraphList()
     # graphPlot(G, N, x_B)
