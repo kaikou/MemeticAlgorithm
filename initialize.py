@@ -149,12 +149,16 @@ def savingMethod(num_shelter, cost):
     heiro = []
     demand = []
     distance = []
+    # plot = []
     drt = 0
     for i in range(1, num_shelter):
         if q[i] > 0:
             ii = i
             while(True):
                 heiro.append(ii)
+                # plot.append(heiro)
+                # graphPlot(pathToRoute(createEdgeSet(plot)), isFirst=0, isLast=0)
+
                 ii = nex[ii]
                 if ii == 0:
                     distance.append(dr[i]) # その経路の移動コスト
@@ -162,12 +166,14 @@ def savingMethod(num_shelter, cost):
                     drt += dr[i]
                     route.append(heiro)
                     heiro = []
+                    # graphPlot(pathToRoute(createEdgeSet(route)), isFirst=0, isLast=0)
                     break
 
     print(route)
     print(demand)
     print(distance)
     print(drt)
+    # graphPlot(pathToRoute(createEdgeSet(route)), isFirst=0, isLast=1)
     return route
 
 
@@ -1004,12 +1010,28 @@ def createGraphList():
         N.append(i)
         pos[i] = (df.ix[i].x, df.ix[i].y)
 
-    return(X, Y, N, pos, G)
+    return(N, pos, G)
 
 """
 グラフをプロットする
 """
-def graphPlot(G, N, edgeList, isFirst, isLast):
+def graphPlot(edgeList, isFirst, isLast):
+    # X = []
+    # Y = []
+    N = []
+    G = nx.Graph()
+    pos = {}  #ノードの位置情報格納
+
+    # # デポ以外の座標を代入
+    # for i in range(num_shelter):
+    #     X.append(df.ix[i].x)
+    #     Y.append(df.ix[i].y)
+
+    # ノード番号とノードの座標を格納
+    for i in range(num_shelter):
+        N.append(i)
+        pos[i] = (df.ix[i].x, df.ix[i].y)
+
     E = []
     edge_labels = {}
     sum_cost = 0
@@ -1034,8 +1056,8 @@ def graphPlot(G, N, edgeList, isFirst, isLast):
     plt.legend()
     plt.xlabel("x")
     plt.ylabel("y")
-    # plt.xlim(0, 70)
-    # plt.ylim(0, 70)
+    plt.xlim(0, 70)
+    plt.ylim(0, 70)
     # plt.axis('off')
     plt.title('Delivery route')
     # plt.grid()
@@ -1083,7 +1105,6 @@ if __name__ == "__main__":
     route = savingMethod(num_shelter, cost)
     elapsed_time = time.time() - start
     print("計算時間：" + str(elapsed_time) + "[sec]")
-
     print("ルート数：{}".format(len(route)))
 
     # セービング方で得られた解にデポをつける
@@ -1093,13 +1114,12 @@ if __name__ == "__main__":
     # test = [[0,1], [2, 1], [2, 3], [3, 0], [4, 5], [5, 6], [4, 0], [6, 0], \
     #         [7, 8], [8, 9], [7, 9], [10, 11], [12, 11], [12, 10]]
     # path = routeToPath(test)
-    # isHeiro(path)
+    # print(isHeiro(path))
 
     random_order = [i for i in range(1, num_shelter)]
     random.shuffle(random_order)
 
-    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, pathToRoute(path), isFirst=1, isLast=0)
+    graphPlot(pathToRoute(path), isFirst=1, isLast=0)
     print(route)
     for n, i in enumerate(random_order):
         prePath = copy.deepcopy(path)
@@ -1112,8 +1132,7 @@ if __name__ == "__main__":
         local_route = Neighborhoods(i, path, "2opt", 1)
         path = routeToPath(local_route)
 
-        X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-        graphPlot(G, N, local_route, isFirst=0, isLast=0)
+        graphPlot(local_route, isFirst=0, isLast=0)
 
         if path == False:
             path = copy.deepcopy(prePath)
@@ -1124,5 +1143,4 @@ if __name__ == "__main__":
     route = pathToRoute(path)
 
     print(path)
-    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, route, isFirst=0, isLast=1)
+    graphPlot(route, isFirst=0, isLast=1)
