@@ -8,7 +8,9 @@
 # Memeticプログラムは遺伝的アルゴリズムと局所探索を組合せた手法である
 #
 # GeneticAlgorithm.pyは遺伝子情報とその遺伝子の評価値を格納するclass
-# 値を取得する場合は.getGenom()
+# 個体を取得する場合は.getGenom()
+# 個体エッジ情報を取得する場合は.getEdge()
+# 個体評価を取得する場合は.getEvaluation()
 
 import GeneticAlgorithm as ga
 import random
@@ -17,13 +19,13 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
-import time
+import sys, time
 import copy
 
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 100
+MAX_GENOM_LIST = 30
 # 各両親から生成される子個体の数
-MAX_CHILDREN = 20
+MAX_CHILDREN = 10
 # # 遺伝子選択数
 # SELECT_GENOM = 20
 # # 個体突然変異確率
@@ -31,9 +33,21 @@ MAX_CHILDREN = 20
 # # 遺伝子突然変異確率
 # GENOM_MUTATION = 0.1
 # 繰り返す世代数
-MAX_GENERATION = 100
+MAX_GENERATION = 80
 # 使用できる車両数
 VEHICLE = 4
+# 車両の最大積載量
+CAPACITY = 60
+# セービング値の効果をコントロールする係数
+LAMBDA = 1
+# N_near()関数で，どこまで近くのノードに局所探索するか
+NEAR = 5
+# penaltyFunction()で，容量制約違反に課すペナルティの係数
+ALPHA = 5
+# penaltyFunction()で，経路長違反に課すペナルティの係数
+BETA = 1.0
+# penaltyFunction()で，経路長違反とする距離
+D = 100
 
 
 
@@ -115,9 +129,7 @@ def createEdgeSet(genom):
         if genom[i] > num_shelter - 1: # >10
             if route_flag == True:
                 E.append([genom[i-1], 0])
-                # print("{}→{}".format(genom[i-1], 0))
             route_flag = False
-            # print("_{}_区切り".format(genom[i]))
         else : # ルート区切り番号ではない場合(避難所番号)
 
             # 現在参照している避難所番号の前が区切り番号だった，
@@ -125,20 +137,16 @@ def createEdgeSet(genom):
             if route_flag == False:
                 E.append([0, genom[i]])
                 route_flag = True
-                # print("{}→{}".format(0, genom[i]))
             else : # フラグがTrue，つまり経路続行
                 E.append([genom[i-1], genom[i]])
-                # print("{}→{}".format(genom[i-1], genom[i]))
     # 遺伝子の最後の番号が区切り番号でない場合，
     if route_flag == True:
         E.append([genom[i], 0])
-        # print("{}→{}".format(genom[i], 0))
 
     #総移動コストの計算
     for e in E:
         total_cost += cost[e[0]][e[1]]
 
-    # print("総移動コスト:{}".format(total_cost))
     # 移動エッジ行列と，総移動コストを返す
     return E, total_cost
 
@@ -449,7 +457,23 @@ def createGraphList():
 """
 グラフをプロットする
 """
-def graphPlot(G, N, edgeList, isLast):
+def graphPlot(edgeList, isFirst, isLast):
+    # X = []
+    # Y = []
+    N = []
+    G = nx.Graph()
+    pos = {}  #ノードの位置情報格納
+
+    # # デポ以外の座標を代入
+    # for i in range(num_shelter):
+    #     X.append(df.ix[i].x)
+    #     Y.append(df.ix[i].y)
+
+    # ノード番号とノードの座標を格納
+    for i in range(num_shelter):
+        N.append(i)
+        pos[i] = (df.ix[i].x, df.ix[i].y)
+
     E = []
     edge_labels = {}
     sum_cost = 0
@@ -480,21 +504,34 @@ def graphPlot(G, N, edgeList, isLast):
     plt.title('Delivery route')
     # plt.grid()
 
+    # 元の経路
+    if isFirst == 1:
+        print("最初の経路:{}".format(penaltyFunction(edgeList, 0)))
+        print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
+        print("ルート数:{}".format(len(routeToPath(edgeList))))
+        plt.title('Initial Delivery route')
+        plt.pause(0.01)
+        plt.figure()
+
+    # 連続プロット中
     if isLast == 0:
         plt.pause(0.01)
         plt.clf()
     else:
-        print("描画終了")
+        print("終わり")
+        print("最終経路:{}".format(penaltyFunction(edgeList, 0)))
+        print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
+        print("ルート数:{}".format(len(routeToPath(edgeList))))
         plt.savefig("./output/" + filename +".png")  # save as png
         plt.show()
         return(0)
 
 
 if __name__ == '__main__':
-    filename = "data_r101"
+    filename = "R101"
     # 避難所情報のデータフレームを生成する
     # 引数[0]:ファイルパス，[1]:ファイル名
-    df = createDataFrame("./data/", filename)
+    df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
     num_shelter = 31
     result_df = pd.DataFrame(index=[], columns=['世代', '総移動コスト'])
@@ -509,6 +546,14 @@ if __name__ == '__main__':
     for i in range(MAX_GENOM_LIST):
         current_generation_individual_group.append(createGenom(num_shelter, VEHICLE))
         print(current_generation_individual_group[i].getGenom())
+
+    EdgeSet, total_cost = createEdgeSet(current_generation_individual_group[0].getGenom())
+
+    graphPlot(EdgeSet, isFirst=1, isLast=0)
+
+    monotonous = total_cost
+    mono_count = 0
+
     """
     ここまで第一世代
     この先繰り返し
@@ -521,7 +566,7 @@ if __name__ == '__main__':
         for i in range(MAX_GENOM_LIST):
             EdgeSet, total_cost = createEdgeSet(current_generation_individual_group[i].getGenom())
             current_generation_individual_group[i].setEdge(EdgeSet)
-            current_generation_individual_group[i].setEvaluation(total_cost)
+            current_generation_individual_group[i].setEvaluation(penaltyFunction(EdgeSet, option=1))
 
         for i in range(MAX_GENOM_LIST):
             # 集団中の全ての個体が丁度一度ずつ親P_Aとして選択される
@@ -536,6 +581,7 @@ if __name__ == '__main__':
             # 子解を代入するリスト
             c = []
             c_cost = []
+            Eval = []
             """
             交叉：EAX
             """
@@ -555,18 +601,27 @@ if __name__ == '__main__':
             for j in range(MAX_CHILDREN):
                 c.append(orderCrossover(P_A, P_B))
                 a, b = createEdgeSet(c[j]) # bがコスト
+                Eval.append(penaltyFunction(a, option=1))
                 c_cost.append(b)
 
             # 現在の親ペアの子の中で一番コストの低い個体が親Aよりも
             # 環境に適合している場合，親Aのインデックスを指定して入れ替える
-            if min(c_cost) < P_A.getEvaluation():
-                min_idx = c_cost.index(min(c_cost))
+            if min(Eval) < P_A.getEvaluation():
+                min_idx = Eval.index(min(Eval))
                 current_generation_individual_group[order[i]].setGenom(c[min_idx])
-                current_generation_individual_group[order[i]].setEvaluation(c_cost[min_idx])
+                current_generation_individual_group[order[i]].setEvaluation(Eval[min_idx])
 
         # 今世代の個体適用度を配列化する
         fits = [i.getEvaluation() for i in current_generation_individual_group]
-        min_ = min(fits) # 最小値を求める
+        min_idx = fits.index(min(fits)) # 最小値を求める
+        min_ = penaltyFunction(current_generation_individual_group[order[min_idx]].getEdge(), option=0)
+
+        if monotonous == min_:
+            mono_count += 1
+        else:
+            mono_count = 0
+            monotonous = min_
+
 
         # データフレームの行を世代によって更新
         series = pd.Series([count_, min_], index=result_df.columns)
@@ -574,18 +629,17 @@ if __name__ == '__main__':
 
         print("====第{}世代====".format(count_))
         print("最も優れた個体の総移動コスト:{}".format(min_))
-        X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-        graphPlot(G, N, current_generation_individual_group[min_idx].getEdge(), 0)
-        # break
-        # for i in range(MAX_GENOM_LIST):
-        #     print("遺伝子<{}>:{}".format(i + 1, current_generation_individual_group[i].getEvaluation()))
+
+        graphPlot(current_generation_individual_group[min_idx].getEdge(), isFirst=0, isLast=0)
+
+        # 10世代以上適応度が変わらなかった場合
+        if mono_count > 10:
+            break
 
     min_idx = fits.index(min(fits))
     print(result_df)
     print("最も優れた個体:{}".format(current_generation_individual_group[min_idx].getGenom()))
     print("最も優れた個体の総移動コスト:{}".format(min_))
 
-
-    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, current_generation_individual_group[min_idx].getEdge(), 1)
+    graphPlot(current_generation_individual_group[min_idx].getEdge(), isFirst=0, isLast=1)
     result_df.to_csv("./output/" + filename + "_result.csv", index=False)
