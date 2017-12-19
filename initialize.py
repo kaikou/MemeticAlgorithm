@@ -31,13 +31,13 @@ MAX_GENERATION = 30
 # 使用できる車両数
 VEHICLE = 3
 # 車両の最大積載量
-CAPACITY = 60
+CAPACITY = 80
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 # N_near()関数で，どこまで近くのノードに局所探索するか
-NEAR = 5
+NEAR = 10
 # penaltyFunction()で，容量制約違反に課すペナルティの係数
-ALPHA = 5
+ALPHA = 2
 # penaltyFunction()で，経路長違反に課すペナルティの係数
 BETA = 1.0
 # penaltyFunction()で，経路長違反とする距離
@@ -256,22 +256,38 @@ def penaltyFunction(route, option):
         return F
 
     for edges in path:
+
+        """
+        容量制約違反の計算
+        """
         nodes = np.unique(edges)
         for n in nodes: # 各ルートの合計需要
             R_demands += df.ix[n].d
-        F_c += abs(R_demands - CAPACITY) # ルート内の需要超過
+
+        if R_demands > CAPACITY:
+            F_c += R_demands - CAPACITY # ルート内の需要超過
+        else:
+            F_c += 0
+            # F_c += abs(R_demands - CAPACITY) # ルート内の需要超過
         R_demands = 0
 
-        for e in edges:
-            R_cost += cost[e[0]][e[1]]
-        if R_cost <= D:
-            R_cost = 0
-            # abs(R_cost)
-        F_d += R_cost - D
-        R_cost = 0
+        """
+        route duration制約違反の計算
+        """
+        # for e in edges:
+        #     R_cost += cost[e[0]][e[1]]
+        # if R_cost > D:
+        #     F_d += R_cost - D
+        # else:
+        #     F_d += 0
+        #     # F_d += abs(R_cost - D)
+        # R_cost = 0
 
     # ペナルティ関数
-    F_p = F + (ALPHA * F_c) + (BETA * F_d)
+
+    # F_p = F + (ALPHA * F_c) + (BETA * F_d)
+    F_p = F + (ALPHA * F_c)
+    # print("F:{}, F_c:{}, F_d:{}".format(F, F_c, F_d))
     return F_p
 
 
@@ -310,7 +326,6 @@ def localSearch(path):
 
     for i in range(1, len(List)):
         v = List[i]
-
 
 
 """
@@ -355,9 +370,9 @@ def Neighborhoods(v, path, neighbor, f_option):
             continue
 
         # 同じエッジを選ぶ可能性があるものは排除
-        if link_v[0] == link_w[0] or link_v[1] == link_w[0] or \
-        link_v[0] == link_w[1] or link_v[1] == link_w[1]:
-            continue
+        # if link_v[0] == link_w[0] or link_v[1] == link_w[0] or \
+        # link_v[0] == link_w[1] or link_v[1] == link_w[1]:
+        #     continue
 
         # ノードwに向かうエッジ
         w_minus = link_w[0][0] if w == link_w[0][1] else link_w[0][1]
@@ -415,6 +430,7 @@ def Neighborhoods(v, path, neighbor, f_option):
             if penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
+                # print("{}適用".format(neighbor))
                 return EdgeSet
 
             """
@@ -457,6 +473,7 @@ def Neighborhoods(v, path, neighbor, f_option):
             if penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
+                # print("{}適用".format(neighbor))
                 return EdgeSet
 
             return EdgeSet
@@ -507,6 +524,7 @@ def Neighborhoods(v, path, neighbor, f_option):
             if penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
+                # print("{}適用".format(neighbor))
                 return EdgeSet
 
             """
@@ -548,6 +566,7 @@ def Neighborhoods(v, path, neighbor, f_option):
             if penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
+                # print("{}適用".format(neighbor))
                 return EdgeSet
 
             return EdgeSet
@@ -587,9 +606,9 @@ def Neighborhoods(v, path, neighbor, f_option):
                 continue
 
             # 同じエッジを選ぶ可能性があるものは排除
-            if link_v[0] == w_minus2list[0] or link_v[1] == w_minus2list[0] \
-            or link_w[0] == w_minus2list[0] or link_w[1] == w_minus2list[0]:
-                continue
+            # if link_v[0] == w_minus2list[0] or link_v[1] == w_minus2list[0] \
+            # or link_w[0] == w_minus2list[0] or link_w[1] == w_minus2list[0]:
+            #     continue
 
             # 選んだwに対して
             # 元々繋がっているエッジ
@@ -638,6 +657,7 @@ def Neighborhoods(v, path, neighbor, f_option):
             if penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
+                # print("{}適用".format(neighbor))
                 return EdgeSet
 
             """
@@ -675,9 +695,9 @@ def Neighborhoods(v, path, neighbor, f_option):
             l8 = cost[v][w]
 
             # 同じエッジを選ぶ可能性があるものは排除
-            if link_v[0] == w_plus2list[0] or link_v[1] == w_plus2list[0] \
-            or link_w[0] == w_plus2list[0] or link_w[1] == w_plus2list[0]:
-                continue
+            # if link_v[0] == w_plus2list[0] or link_v[1] == w_plus2list[0] \
+            # or link_w[0] == w_plus2list[0] or link_w[1] == w_plus2list[0]:
+            #     continue
 
             # if l1 + l2 + l3 + l4 > l5 + l6 + l7 + l8:
             # print("11inter② " + str(v) + ":" + str(w) + "適用")
@@ -711,6 +731,7 @@ def Neighborhoods(v, path, neighbor, f_option):
             if penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
+                # print("{}適用".format(neighbor))
                 return EdgeSet
 
             return EdgeSet
@@ -754,6 +775,7 @@ def Neighborhoods(v, path, neighbor, f_option):
             if penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
+                # print("{}適用".format(neighbor))
                 return EdgeSet
 
             """
@@ -790,6 +812,7 @@ def Neighborhoods(v, path, neighbor, f_option):
             if penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
+                # print("{}適用".format(neighbor))
                 return EdgeSet
 
             # vとwが同じルートか判定
@@ -835,6 +858,7 @@ def Neighborhoods(v, path, neighbor, f_option):
                 if penaltyFunction(EdgeSet, f_option) > P_eval:
                     EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 else:
+                    # print("{}適用".format(neighbor))
                     return EdgeSet
 
                 """
@@ -870,6 +894,7 @@ def Neighborhoods(v, path, neighbor, f_option):
                 if penaltyFunction(EdgeSet, f_option) > P_eval:
                     EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 else:
+                    # print("{}適用".format(neighbor))
                     return EdgeSet
                 return EdgeSet
     return EdgeSet
