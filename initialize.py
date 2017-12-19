@@ -31,13 +31,13 @@ MAX_GENERATION = 30
 # 使用できる車両数
 VEHICLE = 3
 # 車両の最大積載量
-CAPACITY = 80
+CAPACITY = 200
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 # N_near()関数で，どこまで近くのノードに局所探索するか
 NEAR = 10
 # penaltyFunction()で，容量制約違反に課すペナルティの係数
-ALPHA = 2
+ALPHA = 1
 # penaltyFunction()で，経路長違反に課すペナルティの係数
 BETA = 1.0
 # penaltyFunction()で，経路長違反とする距離
@@ -419,8 +419,11 @@ def Neighborhoods(v, path, neighbor, f_option):
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                    continue
+                    if es[0] == 0:
+                        EdgeSet.remove([0, 0])
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
 
             # デポを含まない巡回路ができた場合
             if(isHeiro(routeToPath(EdgeSet)) != 0):
@@ -462,8 +465,11 @@ def Neighborhoods(v, path, neighbor, f_option):
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                    continue
+                    if es[0] == 0:
+                        EdgeSet.remove([0, 0])
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
 
             # デポを含まない巡回路ができた場合
             if(isHeiro(routeToPath(EdgeSet)) != 0):
@@ -513,8 +519,11 @@ def Neighborhoods(v, path, neighbor, f_option):
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                    continue
+                    if es[0] == 0:
+                        EdgeSet.remove([0, 0])
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
 
             # デポを含まない巡回路ができた場合
             if(isHeiro(routeToPath(EdgeSet)) != 0):
@@ -555,8 +564,11 @@ def Neighborhoods(v, path, neighbor, f_option):
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                    continue
+                    if es[0] == 0:
+                        EdgeSet.remove([0, 0])
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
 
             # デポを含まない巡回路ができた場合
             if(isHeiro(routeToPath(EdgeSet)) != 0):
@@ -645,8 +657,11 @@ def Neighborhoods(v, path, neighbor, f_option):
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                    continue
+                    if es[0] == 0:
+                        EdgeSet.remove([0, 0])
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
 
             # デポを含まない巡回路ができた場合
             if(isHeiro(routeToPath(EdgeSet)) != 0):
@@ -718,8 +733,11 @@ def Neighborhoods(v, path, neighbor, f_option):
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                    continue
+                    if es[0] == 0:
+                        EdgeSet.remove([0, 0])
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
 
             # デポを含まない巡回路ができた場合
             if(isHeiro(routeToPath(EdgeSet)) != 0):
@@ -762,8 +780,11 @@ def Neighborhoods(v, path, neighbor, f_option):
 
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                    continue
+                    if es[0] == 0:
+                        EdgeSet.remove([0, 0])
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
 
 
             # デポを含まない巡回路ができた場合
@@ -800,8 +821,11 @@ def Neighborhoods(v, path, neighbor, f_option):
 
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                    continue
+                    if es[0] == 0:
+                        EdgeSet.remove([0, 0])
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                        continue
 
             # デポを含まない巡回路ができた場合
             if(isHeiro(routeToPath(EdgeSet)) != 0):
@@ -846,8 +870,11 @@ def Neighborhoods(v, path, neighbor, f_option):
 
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                        continue
+                        if es[0] == 0:
+                            EdgeSet.remove([0, 0])
+                        else:
+                            EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                            continue
 
                 # デポを含まない巡回路ができた場合
                 if(isHeiro(routeToPath(EdgeSet)) != 0):
@@ -883,8 +910,11 @@ def Neighborhoods(v, path, neighbor, f_option):
                 # [n, n]のようなエッジを持たないように修正
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
-                        continue
+                        if es[0] == 0:
+                            EdgeSet.remove([0, 0])
+                        else:
+                            EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                            continue
                 # デポを含まない巡回路ができた場合
                 if(isHeiro(routeToPath(EdgeSet)) != 0):
                     EdgeSet = copy.deepcopy(DefaultEdgeSet)
@@ -1115,7 +1145,7 @@ if __name__ == "__main__":
 
     df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
-    num_shelter = 31
+    # num_shelter = 31
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -1134,17 +1164,19 @@ if __name__ == "__main__":
 
     # セービング方で得られた解にデポをつける
     path = createEdgeSet(route)
-    # localSearch(path)
 
     # test = [[0,1], [2, 1], [2, 3], [3, 0], [4, 5], [5, 6], [4, 0], [6, 0], \
     #         [7, 8], [8, 9], [7, 9], [10, 11], [12, 11], [12, 10]]
+    # test = [[0, 1], [1, 3], [3, 4], [2, 4], [2, 0], [0, 5], [5, 0]]
     # path = routeToPath(test)
     # print(isHeiro(path))
+
 
     random_order = [i for i in range(1, num_shelter)]
     random.shuffle(random_order)
 
     graphPlot(pathToRoute(path), isFirst=1, isLast=0)
+
     print(route)
     for n, i in enumerate(random_order):
         prePath = copy.deepcopy(path)
@@ -1165,6 +1197,7 @@ if __name__ == "__main__":
         sys.stdout.write("\r%d個目" % n)
         sys.stdout.flush()
         time.sleep(0.01)
+
     route = pathToRoute(path)
 
     print(path)
