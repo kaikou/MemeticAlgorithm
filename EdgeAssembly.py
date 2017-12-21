@@ -9,7 +9,18 @@ import numpy as np
 import random
 import networkx as nx
 import matplotlib.pyplot as plt
+import sys, time
+import copy
 
+# 車両の最大積載量
+CAPACITY = 60
+
+# penaltyFunction()で，容量制約違反に課すペナルティの係数
+ALPHA = 5
+# penaltyFunction()で，経路長違反に課すペナルティの係数
+BETA = 1.0
+# penaltyFunction()で，経路長違反とする距離
+D = 40
 
 
 """
@@ -24,37 +35,6 @@ def createDataFrame(filepath, data_name):
     input_path = filepath + data_name + ".csv"
     return pd.read_csv(input_path)
 
-
-
-"""
-グラフのリストを作成する
-@INPUT:
-    None
-@OUTPUT:
-    X:
-    Y:
-    N:
-    pos:
-    G:
-"""
-def createGraphList():
-    X = []
-    Y = []
-    N = []
-    G = nx.Graph()
-    pos = {}  #ノードの位置情報格納
-
-    # # デポ以外の座標を代入
-    # for i in range(num_shelter):
-    #     X.append(df.ix[i].x)
-    #     Y.append(df.ix[i].y)
-
-    # ノード番号とノードの座標を格納
-    for i in range(num_shelter):
-        N.append(i)
-        pos[i] = (df.ix[i].x, df.ix[i].y)
-
-    return(X, Y, N, pos, G)
 
 """
 避難所の距離に基づいたコスト行列を返す
@@ -101,64 +81,97 @@ def createList():
 
     return P_A, P_B
 
-def createEdge(Parent):
+
+"""
+車両が通るエッジを表す行列を生成
+@INPUT：
+    ga : エッジを生成するgenomClass
+@OUTPUT:
+    E : 個体のエッジ集合
+    total_cost：個体の移動コスト
+"""
+def createEdgeSet(genom):
     # 配送順序の配列を変数genomにコピー
-    genom = Parent
+    # genom = ga.getGenom()
     total_cost = 0
     route_flag = False
-    # どの避難所間を通ったかを示す2次元配列を0で初期化
-    x = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
+    E = []
+
     for i in range(len(genom)):
         # ルート区切り番号だった場合
         if genom[i] > num_shelter - 1: # >10
             if route_flag == True:
-                x[genom[i-1]][0] = 1
-                print("{}→{}".format(genom[i-1], 0))
+                E.append([genom[i-1], 0])
             route_flag = False
-            print("_{}_区切り".format(genom[i]))
         else : # ルート区切り番号ではない場合(避難所番号)
 
             # 現在参照している避難所番号の前が区切り番号だった，
             # もしくは遺伝子の最初を参照している場合
             if route_flag == False:
-                x[0][genom[i]] = 1
+                E.append([0, genom[i]])
                 route_flag = True
-                print("{}→{}".format(0, genom[i]))
             else : # フラグがTrue，つまり経路続行
-                x[genom[i-1]][genom[i]] = 1
-                print("{}→{}".format(genom[i-1], genom[i]))
+                E.append([genom[i-1], genom[i]])
     # 遺伝子の最後の番号が区切り番号でない場合，
     if route_flag == True:
-        x[genom[i]][0] = 1
-        print("{}→{}".format(genom[i], 0))
+        E.append([genom[i], 0])
 
     #総移動コストの計算
-    for i in range(num_shelter):
-        for j in range(num_shelter):
-            total_cost += cost[i][j] * x[i][j]
-    # 総移動コストと，移動エッジ行列を返す
-    return total_cost, x
+    for e in E:
+        total_cost += cost[e[0]][e[1]]
+
+    # 移動エッジ行列と，総移動コストを返す
+    return E, total_cost
+
+"""
+ペナルティ関数による評価を行う
+@INPUT:
+    route: 解の２次元リスト
+    option: どのように評価するか
+        1: ペナルティ関数による評価
+        0: 総移動コストのみの評価
+@OUTPUT:
+    F_p: 関数による評価値
+"""
+def penaltyFunction(route, option):
+    F_p = 0
+    F = 0
+    F_c = 0
+    F_d = 0
+    R_demands = 0
+    R_cost = 0
+    path = routeToPath(route)
+    # ルート総距離
+    for e in route:
+        F += cost[e[0]][e[1]]
+
+    if option == 0:
+        return F
+
+    for edges in path:
+        nodes = np.unique(edges)
+        for n in nodes: # 各ルートの合計需要
+            R_demands += df.ix[n].d
+        F_c += abs(R_demands - CAPACITY) # ルート内の需要超過
+        R_demands = 0
+
+        for e in edges:
+            R_cost += cost[e[0]][e[1]]
+        if R_cost <= D:
+            R_cost = 0
+            # abs(R_cost)
+        F_d += R_cost - D
+        R_cost = 0
+
+    # ペナルティ関数
+    F_p = F + (ALPHA * F_c) + (BETA * F_d)
+    return F_p
 
 
-def EAX(x_A, x_B):
+def EAX(E_A, E_B):
     x_AB = []
-    E_A = []
-    E_B = []
     AB_cycle = []
 
-    for i in range(num_shelter):
-        for j in range(i, num_shelter):
-            if(x_A[i][j] == 1 or x_A[j][i] == 1):
-                E_A.append([i, j])
-            if(x_B[i][j] == 1 or x_B[j][i] == 1):
-                E_B.append([i, j])
-    # エッジの向きまで考慮
-    # for i in range(num_shelter):
-    #     for j in range(num_shelter):
-    #         if(x_A[i][j] == 1):
-    #             E_A.append([i, j])
-    #         if(x_B[i][j] == 1):
-    #             E_B.append([i, j])
     print(E_A)
     print(E_B)
     # G_ABを作成
@@ -272,6 +285,7 @@ def isRoute(edgeList, v_e_1, v_e):
     route: エッジの２次元リスト
 @OUTPUT:
     Path: ルート情報を含むエッジの3次元リスト
+    False: 順回路を構築できない
 """
 def routeToPath(route):
     route = sorted(route)
@@ -283,8 +297,11 @@ def routeToPath(route):
         e = route[0]
         find_flag = False
         heiro = False
+        if e[0] == 0 and e[1] == 0:
+            route.remove(e)
+            continue
         # エッジ端のどちらかに0を含むか
-        if e[0] == 0 or e[1] == 0:
+        elif e[0] == 0 or e[1] == 0:
             R.append(e)
             route.remove(e)
             # 0じゃない方をv_eにセット
@@ -298,61 +315,75 @@ def routeToPath(route):
 
         while(not(find_flag)):
             # v_eを含むエッジをroute内から探しeにセット
+            if (v_e not in np.unique(route)):
+                print("見つからない")
+                return False
             e = random.choice(list(filter(lambda x: v_e in x, route)))
             R.append(e)
             route.remove(e)
+            # print("-------------------")
+            # print("v_e:{}".format(v_e))
+            # print("v_eを含むエッジ:{}".format(e))
+            # print("route:{}".format(route))
+            # print("Path:{}".format(Path))
 
             # eの端点のv_eでない方を新たにv_eとする
             v_e = e[0] if v_e == e[1] else e[1]
             # print("次の端点:{}".format(v_e))
 
-            # 次の端点が0だった場合
-            if(v_e == 0):
+            if(heiro == True):
+                if(v_e == v_e_1):
+                    Path.append(R)
+                    v_e_1 = 0
+                    R=[]
+                    find_flag = True
+            elif(v_e == 0):
                 Path.append(R)
                 R = []
                 find_flag = True
-            # 閉路探索中に最初のノードを発見した場合
-            if(heiro == True and v_e == v_e_1):
-                Path.append(R)
-                v_e_1 = 0
-                R=[]
-                find_flag = True
-    print(Path)
     return(Path)
 
 
 """
 グラフをプロットする
 """
-def graphPlot(G, N, path):
+def graphPlot(edgeList, isFirst, isLast):
+    # X = []
+    # Y = []
+    N = []
+    G = nx.Graph()
+    pos = {}  #ノードの位置情報格納
+
+    # # デポ以外の座標を代入
+    # for i in range(num_shelter):
+    #     X.append(df.ix[i].x)
+    #     Y.append(df.ix[i].y)
+
+    # ノード番号とノードの座標を格納
+    for i in range(num_shelter):
+        N.append(i)
+        pos[i] = (df.ix[i].x, df.ix[i].y)
+
     E = []
     edge_labels = {}
     sum_cost = 0
     labels = {}
 
-    # for i in range(num_shelter):
-    #     for j in range(num_shelter):
-    #         if(x[i][j] == 1):
-    #             E.append((i, j))
-                # edge_labels[(i, j)] = cost[i][j]
-
-    for edge in path:
-        for j in edge:
-            E.append(j)
-            edge_labels[(j[0], j[1])] = cost[j[0]][j[1]]
-
+    for e in edgeList:
+        E.append(e)
+        edge_labels[(e[0], e[1])] = cost[e[0]][e[1]]
 
     for i in range(num_shelter):
         # labels[i] = df.ix[i].d
         labels[i] = i
 
-
-    # E = intermediate
     G.add_nodes_from(N)
     G.add_edges_from(E)
-    nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=200)
-    nx.draw_networkx_labels(G, pos, label=labels, font_size=12)
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
+    nx.draw_networkx_nodes(G, pos, node_size=80, node_color="r")
+    nx.draw_networkx_edges(G, pos, width=1)
+    # nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
+    nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
 
     plt.legend()
     plt.xlabel("x")
@@ -361,19 +392,38 @@ def graphPlot(G, N, path):
     plt.ylim(0, 70)
     # plt.axis('off')
     plt.title('Delivery route')
-    plt.savefig("./output/cvrp.png")  # save as png
-    plt.grid()
-    plt.show()
+    # plt.grid()
 
-    return(0)
+    # 元の経路
+    if isFirst == 1:
+        print("最初の経路:{}".format(penaltyFunction(edgeList, 0)))
+        print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
+        print("ルート数:{}".format(len(routeToPath(edgeList))))
+        plt.title('Initial Delivery route')
+        plt.pause(0.01)
+        plt.figure()
+
+    # 連続プロット中
+    if isLast == 0:
+        plt.pause(0.01)
+        plt.clf()
+    else:
+        print("終わり")
+        print("最終経路:{}".format(penaltyFunction(edgeList, 0)))
+        print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
+        print("ルート数:{}".format(len(routeToPath(edgeList))))
+        plt.savefig("./output/" + filename +".png")  # save as png
+        plt.show()
+        return(0)
 
 
 
 
 
 if __name__ == '__main__':
+    filename = "R101"
 
-    df = createDataFrame("./data/", "data_r101")
+    df = createDataFrame("./csv/", filename)
     num_shelter = 11
 
     cost = createCostMatrix(num_shelter)
@@ -382,8 +432,8 @@ if __name__ == '__main__':
     print("P_A:" + str(P_A))
     print("P_B:" + str(P_B))
 
-    total_cost_A, x_A = createEdge(P_A)
-    total_cost_B, x_B = createEdge(P_B)
+    E_A, total_cost_A = createEdgeSet(P_A)
+    E_B, total_cost_B = createEdgeSet(P_B)
 
     # print("x_A")
     # print(x_A)
@@ -393,13 +443,10 @@ if __name__ == '__main__':
     print("Bの総移動コスト:{}".format(total_cost_B))
 
     # G_AB, edgelist = EAX(x_A, x_B)
-    intermediate = EAX(x_A, x_B)
-    child = routeToPath(intermediate)
-    # print(G_AB)
+    intermediate = EAX(E_A, E_B)
     # print(edgelist)
 
-    X, Y, N, pos, G = createGraphList()  #グラフ描画準備
-    graphPlot(G, N, child)
+    graphPlot(intermediate, isFirst=0, isLast=1)
     # X, Y, N, pos, G = createGraphList()
     # graphPlot(G, N, x_A)
     # X, Y, N, pos, G = createGraphList()
