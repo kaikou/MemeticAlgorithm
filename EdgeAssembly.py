@@ -11,6 +11,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import sys, time
 import copy
+import itertools
 
 # 車両の最大積載量
 CAPACITY = 60
@@ -172,11 +173,24 @@ def EAX(E_A, E_B):
     x_AB = []
     AB_cycle = []
 
+    # E_A = [[0, 1], [1, 3], [3, 9], [9, 20], [20, 0], [0, 2], [2, 15], [15, 0], [0, 4], [4, 12], [12, 13], [13, 0], [0, 5], [5, 14], [14, 16], [16, 17], [17, 18], [18, 0], [0, 6], [6, 7], [7, 8], [8, 10], [10, 11], [11, 19], [19, 0]]
+    # E_B = [[0, 1], [1, 3], [3, 9], [9, 20], [20, 0], [0, 2], [2, 4], [4, 15], [15, 0], [0, 5], [5, 14], [14, 16], [16, 17], [17, 18], [18, 0], [0, 6], [6, 7], [7, 8], [8, 10], [10, 11], [11, 19], [19, 0], [0, 12], [12, 13], [13, 0]]
+
     print(E_A)
     print(E_B)
+    # graphPlot(E_A, isFirst=1, isLast=0, title="E_A")
+    # graphPlot(E_B, isFirst=1, isLast=0, title="E_B")
     # G_ABを作成
-    G_AB = sorted([x for x in E_A + E_B if not (x in E_A and x in E_B)])
+    G_AB = [x for x in E_A + E_B if not (x in E_A and x in E_B)]
+
+    # G_ABから[0, 2]と[2, 0]のような同じエッジを示す要素を排除
+    for e1, e2 in itertools.combinations(G_AB, 2):
+        if e1[0] == e2[1] and e1[1] == e2[0]:
+            G_AB.remove(e1)
+            G_AB.remove(e2)
+
     print("G_AB:{}".format(G_AB))
+    # graphPlot(G_AB, isFirst=1, isLast=0, title="G_AB")
 
     # これいる？
     # x_AB = np.zeros((num_shelter, num_shelter), int) #小数点以下を加える→float型
@@ -194,8 +208,8 @@ def EAX(E_A, E_B):
     """
     i = 0
     s = 0
-    R_A = sorted([x for x in G_AB if (x and x in E_A)])
-    R_B = sorted([x for x in G_AB if (x and x in E_B)])
+    R_A = [x for x in G_AB if (x and x in E_A)]
+    R_B = [x for x in G_AB if (x and x in E_B)]
     P = [0]
     C = []
     print("R_A:{}".format(R_A))
@@ -211,14 +225,14 @@ def EAX(E_A, E_B):
         v_e_1 = v_e # 最初の端点を保持する
         while (not(ABflag)):
             if(P[s] in R_B or s == 0):
-                R_A = sorted([x for x in R_A if (x and x in G_AB)])
+                R_A = [x for x in R_A if (x and x in G_AB)]
                 # 上で選択したノードv_eにつながるR_Aのエッジをeにセットする
                 e = random.choice(list(filter(lambda x: v_e in x, R_A)))
                 # print("e:{}".format(e))
                 G_AB = [x for x in G_AB if x != e]
                 # print("G_AB:{}".format(G_AB))
             else:
-                R_B = sorted([x for x in R_B if (x and x in G_AB)])
+                R_B = [x for x in R_B if (x and x in G_AB)]
                 # 上で選択したノードv_eにつながるR_Bのエッジをeにセットする
                 e = random.choice(list(filter(lambda x: v_e in x, R_B)))
                 # print("e:{}".format(e))
@@ -237,7 +251,7 @@ def EAX(E_A, E_B):
                 C.append(P[1:])
                 P = [0]
                 s = 0
-                R_A = sorted([x for x in R_A if (x and x in G_AB)])
+                R_A = [x for x in R_A if (x and x in G_AB)]
                 ABflag = True
 
 
@@ -250,6 +264,7 @@ def EAX(E_A, E_B):
     """
     E_set = random.choice(C) # Single戦略
     print("E-set:{}".format(E_set))
+    # graphPlot(E_set, isFirst=1, isLast=0, title="E-set")
 
     """
     ステップ4:E-setを用いて中間個体を生成する
@@ -266,8 +281,68 @@ def EAX(E_A, E_B):
     ステップ5:部分順回路が含まれる場合，結合する
     """
 
+    # intermediate = [[6, 5], [5, 8], [7, 1], [10, 1], [0, 9], [3, 0], [0, 4], \
+    #  [2, 0], [2, 6], [8, 0], [7, 10], [9, 0], [3, 4]]
+
+    intermediate = [[6, 5], [5, 8], [7, 1], [10, 1], [0, 9], [3, 0], [0, 4], \
+     [2, 0], [0, 2], [8, 6], [7, 10], [9, 0], [3, 4]]
+
+    print(isHeiro(routeToPath(intermediate)))
+    subtour = isHeiro(routeToPath(intermediate))
+    if(subtour != 0):
+        EAXstep5(intermediate, subtour)
 
     return intermediate
+
+
+"""
+EAXのステップ5を処理する
+
+"""
+def EAXstep5(intermediate, subtourIndex):
+    while(subtourIndex != 0):
+        best = 0
+        for e in intermediate:
+            best += cost[e[0]][e[1]]
+
+        Ui = routeToPath(intermediate)
+        subnum = random.choice(subtourIndex)
+        Ur = Ui[subnum]
+        Ui.pop(subnum)
+
+        print(Ui)
+        print(Ur)
+
+        for e1, e2 in itertools.product(Ur, pathToRoute(Ui)):
+            w1 = -cost[e1[0]][e1[1]] -cost[e2[0]][e2[1]] + \
+            cost[e1[0]][e2[0]] + cost[e1[1]][e2[1]]
+
+            w2 = -cost[e1[0]][e1[1]] -cost[e2[0]][e2[1]] + \
+            cost[e1[0]][e2[1]] + cost[e1[1]][e2[0]]
+
+            w = min(w1, w2)
+
+            if w < best:
+                best = w
+                idx = 1 if w1 == min(w1, w2) else 2
+                rme1 = e1
+                rme2 = e2
+                if(idx == 1):
+                    adde1 = [e1[0], e2[0]]
+                    adde2 = [e1[1], e2[1]]
+                else:
+                    adde1 = [e1[0], e2[1]]
+                    adde2 = [e1[1], e2[0]]
+
+        intermediate.remove(rme1)
+        intermediate.remove(rme2)
+        intermediate.append(adde1)
+        intermediate.append(adde2)
+
+        subtourIndex = isHeiro(routeToPath(intermediate))
+
+    return intermediate
+
 
 
 def isRoute(edgeList, v_e_1, v_e):
@@ -277,6 +352,28 @@ def isRoute(edgeList, v_e_1, v_e):
             return 1
     else:
         return 0
+
+"""
+デポを含まない閉路が存在するかどうか判定し，
+そのインデックスを返す
+@INPUT:
+    path: ルート情報を持つ3次元リスト
+@OUTPUT:
+    I: 部分順回路のインデックスリスト
+"""
+def isHeiro(path):
+    I = []
+    for i, r in enumerate(path):
+        # print(r)
+        if 0 in np.unique(r):
+            pass
+        else:
+            I.append(i)
+    # print("部分巡回路のインデックス:{}".format(I))
+    if I == []:
+        return 0
+    else:
+        return I
 
 
 """
@@ -343,11 +440,25 @@ def routeToPath(route):
                 find_flag = True
     return(Path)
 
+"""
+3次元のエッジリストから，2次元リストに変換する
+@INPUT:
+    path: ルート情報を含むエッジの3次元リスト
+@OUTPUT:
+    route: エッジの2次元リスト
+"""
+def pathToRoute(path):
+    EdgeList = []
+    for edge in path:
+        for j in edge:
+            EdgeList.append(j)
+    return EdgeList
+
 
 """
 グラフをプロットする
 """
-def graphPlot(edgeList, isFirst, isLast):
+def graphPlot(edgeList, isFirst, isLast, title):
     # X = []
     # Y = []
     N = []
@@ -391,7 +502,6 @@ def graphPlot(edgeList, isFirst, isLast):
     plt.xlim(0, 70)
     plt.ylim(0, 70)
     # plt.axis('off')
-    plt.title('Delivery route')
     # plt.grid()
 
     # 元の経路
@@ -399,7 +509,7 @@ def graphPlot(edgeList, isFirst, isLast):
         print("最初の経路:{}".format(penaltyFunction(edgeList, 0)))
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
         print("ルート数:{}".format(len(routeToPath(edgeList))))
-        plt.title('Initial Delivery route')
+        plt.title(title)
         plt.pause(0.01)
         plt.figure()
 
@@ -408,6 +518,7 @@ def graphPlot(edgeList, isFirst, isLast):
         plt.pause(0.01)
         plt.clf()
     else:
+        plt.title(title)
         print("終わり")
         print("最終経路:{}".format(penaltyFunction(edgeList, 0)))
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
@@ -446,8 +557,4 @@ if __name__ == '__main__':
     intermediate = EAX(E_A, E_B)
     # print(edgelist)
 
-    graphPlot(intermediate, isFirst=0, isLast=1)
-    # X, Y, N, pos, G = createGraphList()
-    # graphPlot(G, N, x_A)
-    # X, Y, N, pos, G = createGraphList()
-    # graphPlot(G, N, x_B)
+    graphPlot(intermediate, isFirst=0, isLast=1, title="child")
