@@ -31,7 +31,7 @@ MAX_GENERATION = 30
 # 使用できる車両数
 VEHICLE = 3
 # 車両の最大積載量
-CAPACITY = 50
+CAPACITY = 200
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 # N_near()関数で，どこまで近くのノードに局所探索するか
@@ -1174,11 +1174,48 @@ def isHeiro(path):
 
 """
 def modification(route):
+    path = routeToPath(route)
+    modi_route = []
+
+    r, excess = checkCapacity(path)
+
+    if r == []:
+        return route
+
+    while(r):
+        ExIdx = random.choice(r)
+        print("")
+        print("超過ルートのインデックス:{}".format(ExIdx))
+        print("実行不可能解あり")
+        prePath = copy.deepcopy(path)
+
+        for i in np.unique(path[ExIdx]):
+            modi_route = Neighborhoods(i, path, "10inter", f_option=2, reduce_route=0)
+            path = routeToPath(modi_route)
+            modi_route = Neighborhoods(i, path, "11inter", f_option=2, reduce_route=0)
+            path = routeToPath(modi_route)
+            modi_route = Neighborhoods(i, path, "01inter", f_option=2, reduce_route=0)
+            path = routeToPath(modi_route)
+            modi_route = Neighborhoods(i, path, "2opt", f_option=2, reduce_route=0)
+            path = routeToPath(modi_route)
+
+        if prePath == path:
+            print("修正失敗")
+            return route
+
+        r = []
+        r, excess = checkCapacity(path)
+    return modi_route
+
+"""
+modification()中に用いる
+入力された3次元リストを元に，トラックの容量超過をしているルートの
+インデックスとルート毎の総需要量のリストを返す
+"""
+def checkCapacity(path):
     excess = []
     r = []
     r_demands = 0
-    path = routeToPath(route)
-    modi_route = []
 
     for i, heiro in enumerate(path):
         for n in np.unique(heiro):
@@ -1190,41 +1227,10 @@ def modification(route):
             r.append(i)
         r_demands = 0
         demand = 0
-    # ルート毎の容量超過量
-    print(r) # 容量超過しているルートのインデックス
-    print(excess) # 各ルート毎の容量超過量
 
-    while(r):
-        ExIdx = random.choice(r)
-        print("")
-        print("超過ルートのインデックス:{}".format(ExIdx))
-        print("実行不可能解あり")
-
-        for i in np.unique(path[ExIdx]):
-            print(i)
-            modi_route = Neighborhoods(i, path, "10inter", f_option=2, reduce_route=0)
-            path = routeToPath(modi_route)
-            modi_route = Neighborhoods(i, path, "11inter", f_option=2, reduce_route=0)
-            path = routeToPath(modi_route)
-            modi_route = Neighborhoods(i, path, "01inter", f_option=2, reduce_route=0)
-            path = routeToPath(modi_route)
-            modi_route = Neighborhoods(i, path, "2opt", f_option=2, reduce_route=0)
-            path = routeToPath(modi_route)
-
-        r = []
-
-        for i, heiro in enumerate(path):
-            for n in np.unique(heiro):
-                r_demands += df.ix[n].d
-            demand = r_demands - CAPACITY\
-             # if r_demands > CAPACITY else 0
-            excess.append(demand)
-            if(demand > 0):
-                r.append(i)
-            r_demands = 0
-            demand = 0
-    return modi_route
-
+    print(r)
+    print(excess)
+    return r, excess
 
 
 """
@@ -1307,7 +1313,7 @@ if __name__ == "__main__":
 
     df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
-    num_shelter = 31
+    num_shelter = 100
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -1353,18 +1359,17 @@ if __name__ == "__main__":
         path = routeToPath(local_route)
         local_route = Neighborhoods(i, path, "2opt", f_option=1, reduce_route=1)
         path = routeToPath(local_route)
-
-        graphPlot(local_route, isFirst=0, isLast=0)
-
         if path == False:
             path = copy.deepcopy(prePath)
+        # graphPlot(local_route, isFirst=0, isLast=0)
         # print("{}回目".format(n))
         sys.stdout.write("\r%d個目" % n)
         sys.stdout.flush()
         time.sleep(0.01)
 
     route = pathToRoute(path)
-    route = modification(route)
+    graphPlot(route, isFirst=1, isLast=0)
 
+    route = modification(route)
     print(path)
     graphPlot(route, isFirst=0, isLast=1)
