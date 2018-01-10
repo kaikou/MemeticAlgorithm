@@ -31,7 +31,7 @@ MAX_GENERATION = 30
 # 使用できる車両数
 VEHICLE = 3
 # 車両の最大積載量
-CAPACITY = 200
+CAPACITY = 50
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 # N_near()関数で，どこまで近くのノードに局所探索するか
@@ -112,23 +112,27 @@ def savingMethod(num_shelter, cost):
         dr[i] = cost[0][i] + cost[i][0]
 
     for i in range(1, num_shelter):
-        for j in range(i+1, num_shelter):
+        # for j in range(i+1, num_shelter):
+        for j in range(1, num_shelter):
             s[i][j] = cost[i][0] + cost[0][j] - (LAMBDA * cost[i][j])
-    # print(s) #セービング値
+    print(s) #セービング値
 
     """
     経路の結合処理
     """
-    random_order = [i for i in range(1, num_shelter)]
-    random.shuffle(random_order)
+    random_order1 = [i for i in range(1, num_shelter)]
+    random.shuffle(random_order1)
+    random_order2 = [i for i in range(1, num_shelter)]
+    random.shuffle(random_order2)
 
-    smax = 1
-    while(smax != 0):
+    # smax = 1
+    while(True):
         smax = 0
-        for i in range(1, num_shelter): #1から順に
-        # for i in random_order:
+        # for i in range(1, num_shelter): #1から順に
+        for i in random_order1: # ランダムにノードを選ぶ
             if q[i] > 0:
-                for j in range(1, num_shelter):
+                # for j in range(1, num_shelter):
+                for j in random_order2:
                     if i != j and q[j] > 0:
                         ti = tail[i]
                         if q[i] + q[j] <= CAPACITY and s[ti][j] > smax:
@@ -142,6 +146,9 @@ def savingMethod(num_shelter, cost):
             q[g] = q[g] + q[h]
             q[h] = 0
 
+        if smax == 0:
+            break
+
     """
     経路の出力
     """
@@ -151,7 +158,7 @@ def savingMethod(num_shelter, cost):
     distance = []
     # plot = []
     drt = 0
-    for i in range(1, num_shelter):
+    for i in random_order1:
         if q[i] > 0:
             ii = i
             while(True):
@@ -169,9 +176,9 @@ def savingMethod(num_shelter, cost):
                     # graphPlot(pathToRoute(createEdgeSet(route)), isFirst=0, isLast=0)
                     break
 
-    print(route)
-    print(demand)
-    print(distance)
+    print("route:{}".format(route))
+    print("demand:{}".format(demand))
+    print("distance:{}".format(distance))
     print(drt)
     # graphPlot(pathToRoute(createEdgeSet(route)), isFirst=0, isLast=1)
     return route
@@ -203,7 +210,7 @@ def savingMethod(num_shelter, cost):
 """
 セービング法で構築されたルートに，
 デポを出発してデポに帰るようにエッジを辿る
-２次元配列を生成する．
+3次元配列を生成する．
 @INPUT:
     route:セービング法で構築されたルート(0は表示されていない)
 @OUTPUT:
@@ -235,6 +242,7 @@ def createEdgeSet(route):
 @INPUT:
     route: 解の２次元リスト
     option: どのように評価するか
+        2: 容量超過量F_cのみ
         1: ペナルティ関数による評価
         0: 総移動コストのみの評価
 @OUTPUT:
@@ -288,7 +296,10 @@ def penaltyFunction(route, option):
     # F_p = F + (ALPHA * F_c) + (BETA * F_d)
     F_p = F + (ALPHA * F_c)
     # print("F:{}, F_c:{}, F_d:{}".format(F, F_c, F_d))
-    return F_p
+    if option == 1:
+        return F_p
+    else:
+        return F_c
 
 
 """
@@ -334,10 +345,14 @@ def localSearch(path):
     v: 近傍操作対象ノード
     path: 解の3次元リスト
     f_option: ペナルティ関数をどのように評価するか
+        2: 容量超過
         1: ペナルティ関数による評価
         0: 総移動コストのみの評価
+    reduce_route: 経路数が減る遷移を許容するか
+        1: 許容する
+        0: 許容しない
 """
-def Neighborhoods(v, path, neighbor, f_option):
+def Neighborhoods(v, path, neighbor, f_option, reduce_route):
     EdgeSet = []
     DefaultEdgeSet = []
     path_cost = 0
@@ -350,7 +365,7 @@ def Neighborhoods(v, path, neighbor, f_option):
 
     # 元の解のペナルティ関数評価値を保持
     P_eval = penaltyFunction(DefaultEdgeSet, f_option)
-    # print("デフォルト:{}".format(DefaultEdgeSet))
+    # print("デフォルト:{}".format(P_eval))
 
     # 渡されたノードvに繋がるエッジ2つ
     link_v = [i for i in EdgeSet if (v in i)]
@@ -419,7 +434,8 @@ def Neighborhoods(v, path, neighbor, f_option):
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    if es[0] == 0:
+                    # ルート数が減る遷移をどうするか
+                    if es[0] == 0 and reduce_route == 1:
                         EdgeSet.remove([0, 0])
                     else:
                         EdgeSet = copy.deepcopy(DefaultEdgeSet)
@@ -430,7 +446,20 @@ def Neighborhoods(v, path, neighbor, f_option):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 continue
             # ペナルティ関数により評価
-            if penaltyFunction(EdgeSet, f_option) > P_eval:
+            if(f_option == 2):
+                # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                    if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                        print("修正")
+                        return EdgeSet
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                    return EdgeSet
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+            elif penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
@@ -465,7 +494,7 @@ def Neighborhoods(v, path, neighbor, f_option):
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    if es[0] == 0:
+                    if es[0] == 0 and reduce_route == 1:
                         EdgeSet.remove([0, 0])
                     else:
                         EdgeSet = copy.deepcopy(DefaultEdgeSet)
@@ -476,7 +505,18 @@ def Neighborhoods(v, path, neighbor, f_option):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 continue
             # ペナルティ関数により評価
-            if penaltyFunction(EdgeSet, f_option) > P_eval:
+            if(f_option == 2):
+                # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                    if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                        return EdgeSet
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                    return EdgeSet
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
+            elif penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
@@ -519,7 +559,8 @@ def Neighborhoods(v, path, neighbor, f_option):
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    if es[0] == 0:
+                    # ルート数が減る遷移をどうするか
+                    if es[0] == 0 and reduce_route == 1:
                         EdgeSet.remove([0, 0])
                     else:
                         EdgeSet = copy.deepcopy(DefaultEdgeSet)
@@ -530,7 +571,18 @@ def Neighborhoods(v, path, neighbor, f_option):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 continue
             # ペナルティ関数により評価
-            if penaltyFunction(EdgeSet, f_option) > P_eval:
+            if(f_option == 2):
+                # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                    if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                        return EdgeSet
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                    return EdgeSet
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
+            elif penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
@@ -563,8 +615,9 @@ def Neighborhoods(v, path, neighbor, f_option):
                 continue
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
-                if es[0] == es[1]:
+                if es[0] == es[1] and reduce_route == 1:
                     if es[0] == 0:
+                        # ルート数が減る遷移をどうするか
                         EdgeSet.remove([0, 0])
                     else:
                         EdgeSet = copy.deepcopy(DefaultEdgeSet)
@@ -575,7 +628,18 @@ def Neighborhoods(v, path, neighbor, f_option):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 continue
             # ペナルティ関数により評価
-            if penaltyFunction(EdgeSet, f_option) > P_eval:
+            if(f_option == 2):
+                # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                    if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                        return EdgeSet
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                    return EdgeSet
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
+            elif penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
@@ -656,7 +720,7 @@ def Neighborhoods(v, path, neighbor, f_option):
 
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
-                if es[0] == es[1]:
+                if es[0] == es[1] and reduce_route == 1:
                     if es[0] == 0:
                         EdgeSet.remove([0, 0])
                     else:
@@ -669,7 +733,18 @@ def Neighborhoods(v, path, neighbor, f_option):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 continue
             # ペナルティ関数により評価
-            if penaltyFunction(EdgeSet, f_option) > P_eval:
+            if(f_option == 2):
+                # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                    if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                        return EdgeSet
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                    return EdgeSet
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
+            elif penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
@@ -732,7 +807,7 @@ def Neighborhoods(v, path, neighbor, f_option):
 
             # [n, n]のようなエッジを持たないように修正
             for es in EdgeSet:
-                if es[0] == es[1]:
+                if es[0] == es[1] and reduce_route == 1:
                     if es[0] == 0:
                         EdgeSet.remove([0, 0])
                     else:
@@ -746,7 +821,18 @@ def Neighborhoods(v, path, neighbor, f_option):
                 continue
 
             # ペナルティ関数により評価
-            if penaltyFunction(EdgeSet, f_option) > P_eval:
+            if(f_option == 2):
+                # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                    if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                        return EdgeSet
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                    return EdgeSet
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
+            elif penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
@@ -780,7 +866,7 @@ def Neighborhoods(v, path, neighbor, f_option):
 
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    if es[0] == 0:
+                    if es[0] == 0 and reduce_route == 1:
                         EdgeSet.remove([0, 0])
                     else:
                         EdgeSet = copy.deepcopy(DefaultEdgeSet)
@@ -793,7 +879,18 @@ def Neighborhoods(v, path, neighbor, f_option):
                 continue
 
             # ペナルティ関数により評価
-            if penaltyFunction(EdgeSet, f_option) > P_eval:
+            if(f_option == 2):
+                # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                    if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                        return EdgeSet
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                    return EdgeSet
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
+            elif penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
@@ -821,7 +918,7 @@ def Neighborhoods(v, path, neighbor, f_option):
 
             for es in EdgeSet:
                 if es[0] == es[1]:
-                    if es[0] == 0:
+                    if es[0] == 0 and reduce_route == 1:
                         EdgeSet.remove([0, 0])
                     else:
                         EdgeSet = copy.deepcopy(DefaultEdgeSet)
@@ -833,7 +930,18 @@ def Neighborhoods(v, path, neighbor, f_option):
                 continue
 
             # ペナルティ関数により評価
-            if penaltyFunction(EdgeSet, f_option) > P_eval:
+            if(f_option == 2):
+                # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                    if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                        return EdgeSet
+                    else:
+                        EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                    return EdgeSet
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
+            elif penaltyFunction(EdgeSet, f_option) > P_eval:
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
@@ -870,7 +978,7 @@ def Neighborhoods(v, path, neighbor, f_option):
 
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        if es[0] == 0:
+                        if es[0] == 0 and reduce_route == 1:
                             EdgeSet.remove([0, 0])
                         else:
                             EdgeSet = copy.deepcopy(DefaultEdgeSet)
@@ -882,7 +990,18 @@ def Neighborhoods(v, path, neighbor, f_option):
                     continue
 
                 # ペナルティ関数により評価
-                if penaltyFunction(EdgeSet, f_option) > P_eval:
+                if(f_option == 2):
+                    # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                    if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                        if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                            return EdgeSet
+                        else:
+                            EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                    if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                        return EdgeSet
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                elif penaltyFunction(EdgeSet, f_option) > P_eval:
                     EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 else:
                     # print("{}適用".format(neighbor))
@@ -910,7 +1029,7 @@ def Neighborhoods(v, path, neighbor, f_option):
                 # [n, n]のようなエッジを持たないように修正
                 for es in EdgeSet:
                     if es[0] == es[1]:
-                        if es[0] == 0:
+                        if es[0] == 0 and reduce_route == 1:
                             EdgeSet.remove([0, 0])
                         else:
                             EdgeSet = copy.deepcopy(DefaultEdgeSet)
@@ -921,7 +1040,19 @@ def Neighborhoods(v, path, neighbor, f_option):
                     continue
 
                 # ペナルティ関数により評価
-                if penaltyFunction(EdgeSet, f_option) > P_eval:
+                if(f_option == 2):
+                    # 元の解も改良解も実行可能な場合，距離の短い方を返す
+                    if P_eval == 0 and penaltyFunction(EdgeSet, f_option) == 0:
+                        if(penaltyFunction(EdgeSet, 0) < penaltyFunction(DefaultEdgeSet, 0)):
+                            return EdgeSet
+                        else:
+                            EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                    if(penaltyFunction(EdgeSet, f_option) < P_eval):
+                        return EdgeSet
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+
+                elif penaltyFunction(EdgeSet, f_option) > P_eval:
                     EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 else:
                     # print("{}適用".format(neighbor))
@@ -936,7 +1067,7 @@ def Neighborhoods(v, path, neighbor, f_option):
     route: エッジの２次元リスト
 @OUTPUT:
     Path: ルート情報を含むエッジの3次元リスト
-    False: 順回路を構築できない
+    False: 巡回路を構築できない
 """
 def routeToPath(route):
     route = sorted(route)
@@ -1019,7 +1150,7 @@ def pathToRoute(path):
 @INPUT:
     path: ルート情報を持つ3次元リスト
 @OUTPUT:
-    I: 部分順回路のインデックスリスト
+    I: 部分巡回路のインデックスリスト
 """
 def isHeiro(path):
     I = []
@@ -1035,37 +1166,66 @@ def isHeiro(path):
     else:
         return I
 
-
-
 """
-グラフのリストを作成する
+実行不可能解の修正操作
 @INPUT:
-    None
+    route: 解の2次元配列
 @OUTPUT:
-    X:
-    Y:
-    N:
-    pos:
-    G:
+
 """
-def createGraphList():
-    X = []
-    Y = []
-    N = []
-    G = nx.Graph()
-    pos = {}  #ノードの位置情報格納
+def modification(route):
+    excess = []
+    r = []
+    r_demands = 0
+    path = routeToPath(route)
+    modi_route = []
 
-    # # デポ以外の座標を代入
-    # for i in range(num_shelter):
-    #     X.append(df.ix[i].x)
-    #     Y.append(df.ix[i].y)
+    for i, heiro in enumerate(path):
+        for n in np.unique(heiro):
+            r_demands += df.ix[n].d
+        demand = r_demands - CAPACITY\
+         # if r_demands > CAPACITY else 0
+        excess.append(demand)
+        if(demand > 0):
+            r.append(i)
+        r_demands = 0
+        demand = 0
+    # ルート毎の容量超過量
+    print(r) # 容量超過しているルートのインデックス
+    print(excess) # 各ルート毎の容量超過量
 
-    # ノード番号とノードの座標を格納
-    for i in range(num_shelter):
-        N.append(i)
-        pos[i] = (df.ix[i].x, df.ix[i].y)
+    while(r):
+        ExIdx = random.choice(r)
+        print("")
+        print("超過ルートのインデックス:{}".format(ExIdx))
+        print("実行不可能解あり")
 
-    return(N, pos, G)
+        for i in np.unique(path[ExIdx]):
+            print(i)
+            modi_route = Neighborhoods(i, path, "10inter", f_option=2, reduce_route=0)
+            path = routeToPath(modi_route)
+            modi_route = Neighborhoods(i, path, "11inter", f_option=2, reduce_route=0)
+            path = routeToPath(modi_route)
+            modi_route = Neighborhoods(i, path, "01inter", f_option=2, reduce_route=0)
+            path = routeToPath(modi_route)
+            modi_route = Neighborhoods(i, path, "2opt", f_option=2, reduce_route=0)
+            path = routeToPath(modi_route)
+
+        r = []
+
+        for i, heiro in enumerate(path):
+            for n in np.unique(heiro):
+                r_demands += df.ix[n].d
+            demand = r_demands - CAPACITY\
+             # if r_demands > CAPACITY else 0
+            excess.append(demand)
+            if(demand > 0):
+                r.append(i)
+            r_demands = 0
+            demand = 0
+    return modi_route
+
+
 
 """
 グラフをプロットする
@@ -1111,8 +1271,8 @@ def graphPlot(edgeList, isFirst, isLast):
     plt.legend()
     plt.xlabel("x")
     plt.ylabel("y")
-    plt.xlim(0, 70)
-    plt.ylim(0, 70)
+    # plt.xlim(0, 70)
+    # plt.ylim(0, 70)
     # plt.axis('off')
     plt.title('Delivery route')
     # plt.grid()
@@ -1121,6 +1281,7 @@ def graphPlot(edgeList, isFirst, isLast):
     if isFirst == 1:
         print("最初の経路:{}".format(penaltyFunction(edgeList, 0)))
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
+        print("超過:{}".format(penaltyFunction(edgeList, 2)))
         print("ルート数:{}".format(len(routeToPath(edgeList))))
         plt.title('Initial Delivery route')
         plt.pause(0.01)
@@ -1134,6 +1295,7 @@ def graphPlot(edgeList, isFirst, isLast):
         print("終わり")
         print("最終経路:{}".format(penaltyFunction(edgeList, 0)))
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
+        print("超過:{}".format(penaltyFunction(edgeList, 2)))
         print("ルート数:{}".format(len(routeToPath(edgeList))))
         plt.savefig("./output/" + filename +".png")  # save as png
         plt.show()
@@ -1145,7 +1307,7 @@ if __name__ == "__main__":
 
     df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
-    # num_shelter = 31
+    num_shelter = 31
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -1165,6 +1327,8 @@ if __name__ == "__main__":
     # セービング方で得られた解にデポをつける
     path = createEdgeSet(route)
 
+    print(pathToRoute(path))
+
     # test = [[0,1], [2, 1], [2, 3], [3, 0], [4, 5], [5, 6], [4, 0], [6, 0], \
     #         [7, 8], [8, 9], [7, 9], [10, 11], [12, 11], [12, 10]]
     # test = [[0, 1], [1, 3], [3, 4], [2, 4], [2, 0], [0, 5], [5, 0]]
@@ -1177,16 +1341,17 @@ if __name__ == "__main__":
 
     graphPlot(pathToRoute(path), isFirst=1, isLast=0)
 
+    # sys.exit()
     print(route)
     for n, i in enumerate(random_order):
         prePath = copy.deepcopy(path)
-        local_route = Neighborhoods(i, path, "10inter", 1)
+        local_route = Neighborhoods(i, path, "10inter", f_option=1, reduce_route=1)
         path = routeToPath(local_route)
-        local_route = Neighborhoods(i, path, "11inter", 1)
+        local_route = Neighborhoods(i, path, "11inter", f_option=1, reduce_route=1)
         path = routeToPath(local_route)
-        local_route = Neighborhoods(i, path, "01inter", 1)
+        local_route = Neighborhoods(i, path, "01inter", f_option=1, reduce_route=1)
         path = routeToPath(local_route)
-        local_route = Neighborhoods(i, path, "2opt", 1)
+        local_route = Neighborhoods(i, path, "2opt", f_option=1, reduce_route=1)
         path = routeToPath(local_route)
 
         graphPlot(local_route, isFirst=0, isLast=0)
@@ -1199,6 +1364,7 @@ if __name__ == "__main__":
         time.sleep(0.01)
 
     route = pathToRoute(path)
+    route = modification(route)
 
     print(path)
     graphPlot(route, isFirst=0, isLast=1)
