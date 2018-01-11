@@ -356,16 +356,20 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
     EdgeSet = []
     DefaultEdgeSet = []
     path_cost = 0
+    bestSet = []
 
     # 解を構成する全てのエッジ集合を生成
     for edge in path:
         for j in edge:
             EdgeSet.append(j)
     DefaultEdgeSet = copy.deepcopy(EdgeSet)
+    bestSet = copy.deepcopy(EdgeSet)
+    # print("デフォ:{}".format(DefaultEdgeSet))
 
     # 元の解のペナルティ関数評価値を保持
     P_eval = penaltyFunction(DefaultEdgeSet, f_option)
     # print("デフォルト:{}".format(P_eval))
+    # print("デフォルト:{}".format(penaltyFunction(EdgeSet, f_option)))
 
     # 渡されたノードvに繋がるエッジ2つ
     link_v = [i for i in EdgeSet if (v in i)]
@@ -409,13 +413,13 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
             """
             # 選んだwに対して
             # 元々繋がっているエッジ
-            l1 = cost[w_minus][w] # w-→w
-            l2 = cost[v_minus][v] # v-→v
-            l3 = cost[v][v_plus] # v→v+
-            # つなぎ直すエッジ
-            l4 = cost[w_minus][v]
-            l5 = cost[v][w]
-            l6 = cost[v_minus][v_plus]
+            # l1 = cost[w_minus][w] # w-→w
+            # l2 = cost[v_minus][v] # v-→v
+            # l3 = cost[v][v_plus] # v→v+
+            # # つなぎ直すエッジ
+            # l4 = cost[w_minus][v]
+            # l5 = cost[v][w]
+            # l6 = cost[v_minus][v_plus]
 
             # if l1 + l2 + l3 > l4 + l5 + l6:
             # print("10inter① " + str(v) + ":" + str(w) + "適用")
@@ -463,19 +467,21 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
-                return EdgeSet
+                # return EdgeSet
+                bestSet = copy.deepcopy(EdgeSet)
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
 
             """
             (1,0)Interchange②
             """
             # 元々繋がっているエッジ
-            l1 = cost[w][w_plus] # w→w+
-            l2 = cost[v_minus][v] # v-→v
-            l3 = cost[v][v_plus] # v→v+
-            # つなぎ直すエッジ
-            l4 = cost[w_plus][v]
-            l5 = cost[v][w]
-            l6 = cost[v_minus][v_plus]
+            # l1 = cost[w][w_plus] # w→w+
+            # l2 = cost[v_minus][v] # v-→v
+            # l3 = cost[v][v_plus] # v→v+
+            # # つなぎ直すエッジ
+            # l4 = cost[w_plus][v]
+            # l5 = cost[v][w]
+            # l6 = cost[v_minus][v_plus]
 
             # if l1 + l2 + l3 > l4 + l5 + l6:
             # print("10inter② " + str(v) + ":" + str(w) + "適用")
@@ -520,9 +526,11 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
-                return EdgeSet
+                # return EdgeSet
+                bestSet = copy.deepcopy(EdgeSet)
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
 
-            return EdgeSet
+            return bestSet
 
         """
         (0,1)Interchange
@@ -534,13 +542,13 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
             """
             # 選んだwに対して
             # 元々繋がっているエッジ
-            l1 = cost[w_minus][w]
-            l2 = cost[w][w_plus]
-            l3 = cost[v_minus][v]
-            # つなぎ直すエッジ
-            l4 = cost[w_minus][w_plus]
-            l5 = cost[v_minus][w]
-            l6 = cost[v][w]
+            # l1 = cost[w_minus][w]
+            # l2 = cost[w][w_plus]
+            # l3 = cost[v_minus][v]
+            # # つなぎ直すエッジ
+            # l4 = cost[w_minus][w_plus]
+            # l5 = cost[v_minus][w]
+            # l6 = cost[v][w]
 
             # if l1 + l2 + l3 > l4 + l5 + l6:
             # print("01inter① " + str(v) + ":" + str(w) + "適用")
@@ -586,19 +594,21 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
-                return EdgeSet
+                # return EdgeSet
+                bestSet = copy.deepcopy(EdgeSet)
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
 
             """
             (0,1)Interchange②
             """
             # 元々繋がっているエッジ
-            l1 = cost[w_minus][w]
-            l2 = cost[w][w_plus]
-            l3 = cost[v][v_plus]
-            # つなぎ直すエッジ
-            l4 = cost[w_minus][w_plus]
-            l5 = cost[v_plus][w]
-            l6 = cost[v][w]
+            # l1 = cost[w_minus][w]
+            # l2 = cost[w][w_plus]
+            # l3 = cost[v][v_plus]
+            # # つなぎ直すエッジ
+            # l4 = cost[w_minus][w_plus]
+            # l5 = cost[v_plus][w]
+            # l6 = cost[v][w]
 
             # if l1 + l2 + l3 > l4 + l5 + l6:
             # print("01inter② " + str(v) + ":" + str(w) + "適用")
@@ -643,9 +653,11 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
-                return EdgeSet
+                # return EdgeSet
+                bestSet = copy.deepcopy(EdgeSet)
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
 
-            return EdgeSet
+            return bestSet
 
         """
         (1,1)Interchange
@@ -688,15 +700,15 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
 
             # 選んだwに対して
             # 元々繋がっているエッジ
-            l1 = cost[w_minus_minus][w_minus]
-            l2 = cost[w_minus][w]
-            l3 = cost[v_minus][v]
-            l4 = cost[v][v_plus]
-            # つなぎ直すエッジ
-            l5 = cost[w_minus_minus][v]
-            l6 = cost[w_minus][v_plus]
-            l7 = cost[v_minus][w_minus]
-            l8 = cost[v][w]
+            # l1 = cost[w_minus_minus][w_minus]
+            # l2 = cost[w_minus][w]
+            # l3 = cost[v_minus][v]
+            # l4 = cost[v][v_plus]
+            # # つなぎ直すエッジ
+            # l5 = cost[w_minus_minus][v]
+            # l6 = cost[w_minus][v_plus]
+            # l7 = cost[v_minus][w_minus]
+            # l8 = cost[v][w]
 
             # if l1 + l2 + l3 + l4 > l5 + l6 + l7 + l8:
                 # print("11inter① " + str(v) + ":" + str(w) + "適用")
@@ -748,7 +760,9 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
-                return EdgeSet
+                # return EdgeSet
+                bestSet = copy.deepcopy(EdgeSet)
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
 
             """
             (1,1)Interchange②
@@ -774,15 +788,15 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
             # print("w++:{}".format(w_plus_plus))
 
             # 元々繋がっているエッジ
-            l1 = cost[w_plus][w_plus_plus]
-            l2 = cost[w][w_plus]
-            l3 = cost[v_minus][v]
-            l4 = cost[v][v_plus]
-            # つなぎ直すエッジ
-            l5 = cost[v][w_plus_plus]
-            l6 = cost[v_minus][w_plus]
-            l7 = cost[v_plus][w_plus]
-            l8 = cost[v][w]
+            # l1 = cost[w_plus][w_plus_plus]
+            # l2 = cost[w][w_plus]
+            # l3 = cost[v_minus][v]
+            # l4 = cost[v][v_plus]
+            # # つなぎ直すエッジ
+            # l5 = cost[v][w_plus_plus]
+            # l6 = cost[v_minus][w_plus]
+            # l7 = cost[v_plus][w_plus]
+            # l8 = cost[v][w]
 
             # 同じエッジを選ぶ可能性があるものは排除
             # if link_v[0] == w_plus2list[0] or link_v[1] == w_plus2list[0] \
@@ -836,9 +850,11 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
-                return EdgeSet
+                # return EdgeSet
+                bestSet = copy.deepcopy(EdgeSet)
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
 
-            return EdgeSet
+            return bestSet
 
         """
         2-opt近傍
@@ -848,10 +864,10 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
             2-opt①
             """
             # print("2opt①やるよー")
-            l1 = cost[v_minus][v] # 元のエッジ
-            l2 = cost[w_minus][w] # 元のエッジ
-            l3 = cost[v][w]
-            l4 = cost[v_minus][w_minus]
+            # l1 = cost[v_minus][v] # 元のエッジ
+            # l2 = cost[w_minus][w] # 元のエッジ
+            # l3 = cost[v][w]
+            # l4 = cost[v_minus][w_minus]
 
             # if l1 + l2 > l3 + l4:
             # print("2-opt① " + str(v) + ":" + str(w) + "適用")
@@ -894,16 +910,18 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
-                return EdgeSet
+                # return EdgeSet
+                bestSet = copy.deepcopy(EdgeSet)
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
 
             """
             2-opt④
             """
             # print("2opt④やるよー")
-            l1 = cost[v][v_plus] # 元のエッジ
-            l2 = cost[w][w_plus] # 元のエッジ
-            l3 = cost[v][w]
-            l4 = cost[v_plus][w_plus]
+            # l1 = cost[v][v_plus] # 元のエッジ
+            # l2 = cost[w][w_plus] # 元のエッジ
+            # l3 = cost[v][w]
+            # l4 = cost[v_plus][w_plus]
 
             # if l1 + l2 > l3 + l4:
             # print("2-opt④ " + str(v) + ":" + str(w) + "適用")
@@ -945,7 +963,9 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                 EdgeSet = copy.deepcopy(DefaultEdgeSet)
             else:
                 # print("{}適用".format(neighbor))
-                return EdgeSet
+                # return EdgeSet
+                bestSet = copy.deepcopy(EdgeSet)
+                EdgeSet = copy.deepcopy(DefaultEdgeSet)
 
             # vとwが同じルートか判定
             sameRoute = False
@@ -960,10 +980,10 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                 2-opt②
                 """
                 # print("2opt②やるよー")
-                l1 = cost[v_minus][v] # 元のエッジ
-                l2 = cost[w][w_plus] # 元のエッジ
-                l3 = cost[v][w]
-                l4 = cost[v_minus][w_plus]
+                # l1 = cost[v_minus][v] # 元のエッジ
+                # l2 = cost[w][w_plus] # 元のエッジ
+                # l3 = cost[v][w]
+                # l4 = cost[v_minus][w_plus]
 
                 # if l1 + l2 > l3 + l4:
                 # print("2-opt② " + str(v) + ":" + str(w) + "適用")
@@ -1005,16 +1025,18 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                     EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 else:
                     # print("{}適用".format(neighbor))
-                    return EdgeSet
+                    # return EdgeSet
+                    bestSet = copy.deepcopy(EdgeSet)
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
 
                 """
                 2-opt③
                 """
                 # print("2opt③やるよー")
-                l1 = cost[v][v_plus] # 元のエッジ
-                l2 = cost[w_minus][w] # 元のエッジ
-                l3 = cost[v][w]
-                l4 = cost[v_plus][w_minus]
+                # l1 = cost[v][v_plus] # 元のエッジ
+                # l2 = cost[w_minus][w] # 元のエッジ
+                # l3 = cost[v][w]
+                # l4 = cost[v_plus][w_minus]
 
                 # if l1 + l2 > l3 + l4:
                 # print("2-opt③ " + str(v) + ":" + str(w) + "適用")
@@ -1056,9 +1078,11 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
                     EdgeSet = copy.deepcopy(DefaultEdgeSet)
                 else:
                     # print("{}適用".format(neighbor))
-                    return EdgeSet
-                return EdgeSet
-    return EdgeSet
+                    # return EdgeSet
+                    bestSet = copy.deepcopy(EdgeSet)
+                    EdgeSet = copy.deepcopy(DefaultEdgeSet)
+                return bestSet
+    return bestSet
 
 
 """
@@ -1228,8 +1252,8 @@ def checkCapacity(path):
         r_demands = 0
         demand = 0
 
-    print(r)
-    print(excess)
+    # print(r)
+    # print(excess)
     return r, excess
 
 """
@@ -1311,12 +1335,14 @@ if __name__ == "__main__":
 
     df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
-    num_shelter = 21
+    num_shelter = 11
     print("顧客数:{}".format(num_shelter-1))
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
     cost = createCostMatrix(num_shelter)
+    print(cost[1][3])
+    # sys.exit()
 
     print(df[:11])
     # print(cost)
@@ -1346,7 +1372,6 @@ if __name__ == "__main__":
 
     graphPlot(pathToRoute(path), isFirst=1, isLast=0, title="Saving Route")
 
-    # sys.exit()
     print(route)
     for n, i in enumerate(random_order):
         prePath = copy.deepcopy(path)
