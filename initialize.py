@@ -31,7 +31,7 @@ MAX_GENERATION = 30
 # 使用できる車両数
 VEHICLE = 3
 # 車両の最大積載量
-CAPACITY = 200
+CAPACITY = 160
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 # N_near()関数で，どこまで近くのノードに局所探索するか
@@ -1171,7 +1171,7 @@ def isHeiro(path):
 @INPUT:
     route: 解の2次元配列
 @OUTPUT:
-
+    modi_route: 修正後の解の2次元配列
 """
 def modification(route):
     path = routeToPath(route)
@@ -1232,11 +1232,10 @@ def checkCapacity(path):
     print(excess)
     return r, excess
 
-
 """
 グラフをプロットする
 """
-def graphPlot(edgeList, isFirst, isLast):
+def graphPlot(edgeList, isFirst, isLast, title):
     # X = []
     # Y = []
     N = []
@@ -1268,28 +1267,26 @@ def graphPlot(edgeList, isFirst, isLast):
 
     G.add_nodes_from(N)
     G.add_edges_from(E)
-    nx.draw_networkx_nodes(G, pos, node_size=40, node_color="r")
+    nx.draw_networkx_nodes(G, pos, node_size=80, node_color="r")
     nx.draw_networkx_edges(G, pos, width=1)
     # nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
-    nx.draw_networkx_labels(G, pos, labels=labels, font_size=4) # デフォルト12
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=3) # デフォルト8
+    nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
 
     plt.legend()
     plt.xlabel("x")
     plt.ylabel("y")
-    # plt.xlim(0, 70)
-    # plt.ylim(0, 70)
+    plt.xlim(0, 70)
+    plt.ylim(0, 70)
     # plt.axis('off')
-    plt.title('Delivery route')
     # plt.grid()
 
     # 元の経路
     if isFirst == 1:
         print("最初の経路:{}".format(penaltyFunction(edgeList, 0)))
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
-        print("超過:{}".format(penaltyFunction(edgeList, 2)))
         print("ルート数:{}".format(len(routeToPath(edgeList))))
-        plt.title('Initial Delivery route')
+        plt.title(title)
         plt.pause(0.01)
         plt.figure()
 
@@ -1298,10 +1295,11 @@ def graphPlot(edgeList, isFirst, isLast):
         plt.pause(0.01)
         plt.clf()
     else:
+        print(checkCapacity(routeToPath(edgeList)))
+        plt.title(title)
         print("終わり")
         print("最終経路:{}".format(penaltyFunction(edgeList, 0)))
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
-        print("超過:{}".format(penaltyFunction(edgeList, 2)))
         print("ルート数:{}".format(len(routeToPath(edgeList))))
         plt.savefig("./output/" + filename +".png")  # save as png
         plt.show()
@@ -1309,11 +1307,12 @@ def graphPlot(edgeList, isFirst, isLast):
 
 
 if __name__ == "__main__":
-    filename = "R101"
+    filename = "vrpnc1"
 
     df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
-    num_shelter = 100
+    num_shelter = 21
+    print("顧客数:{}".format(num_shelter-1))
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
@@ -1333,7 +1332,7 @@ if __name__ == "__main__":
     # セービング方で得られた解にデポをつける
     path = createEdgeSet(route)
 
-    print(pathToRoute(path))
+    pathToRoute(path)
 
     # test = [[0,1], [2, 1], [2, 3], [3, 0], [4, 5], [5, 6], [4, 0], [6, 0], \
     #         [7, 8], [8, 9], [7, 9], [10, 11], [12, 11], [12, 10]]
@@ -1345,7 +1344,7 @@ if __name__ == "__main__":
     random_order = [i for i in range(1, num_shelter)]
     random.shuffle(random_order)
 
-    graphPlot(pathToRoute(path), isFirst=1, isLast=0)
+    graphPlot(pathToRoute(path), isFirst=1, isLast=0, title="Saving Route")
 
     # sys.exit()
     print(route)
@@ -1361,15 +1360,15 @@ if __name__ == "__main__":
         path = routeToPath(local_route)
         if path == False:
             path = copy.deepcopy(prePath)
-        # graphPlot(local_route, isFirst=0, isLast=0)
+        # graphPlot(local_route, isFirst=0, isLast=0, title="local search")
         # print("{}回目".format(n))
         sys.stdout.write("\r%d個目" % n)
         sys.stdout.flush()
         time.sleep(0.01)
 
     route = pathToRoute(path)
-    graphPlot(route, isFirst=1, isLast=0)
+    graphPlot(route, isFirst=1, isLast=0, title="localSearch")
 
     route = modification(route)
     print(path)
-    graphPlot(route, isFirst=0, isLast=1)
+    graphPlot(route, isFirst=0, isLast=1, title="modification")
