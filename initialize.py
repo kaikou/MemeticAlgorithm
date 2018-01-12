@@ -66,18 +66,17 @@ def createDataFrame(filepath, data_name):
 """
 def createCostMatrix(num_shelter):
     dis = []
-    arr = np.empty((0, num_shelter), int) #小数点以下を加える→float型
+    arr = np.empty((0, num_shelter), float) #小数点以下を加える→float型
 
     for i in range(num_shelter):
         for j in range(num_shelter):
             x_crd = df.ix[j].x - df.ix[i].x
             y_crd = df.ix[j].y - df.ix[i].y
 
-            dis.append(int(np.sqrt(np.power(x_crd, 2) + np.power(y_crd, 2))))
+            dis.append(round(np.sqrt(np.power(x_crd, 2) + np.power(y_crd, 2)), 2))
             if j == num_shelter - 1:
                 arr = np.append(arr, np.array([dis]), axis=0)
                 dis = []
-
     print(df[0:11])
     print("コスト行列-----------------------------------")
     print(arr)
@@ -256,12 +255,13 @@ def penaltyFunction(route, option):
     R_demands = 0
     R_cost = 0
     path = routeToPath(route)
+
     # ルート総距離
     for e in route:
-        F += cost[e[0]][e[1]]
+        F += cost[int(e[0])][int(e[1])]
 
     if option == 0:
-        return F
+        return round(F, 2)
 
     for edges in path:
 
@@ -297,9 +297,9 @@ def penaltyFunction(route, option):
     F_p = F + (ALPHA * F_c)
     # print("F:{}, F_c:{}, F_d:{}".format(F, F_c, F_d))
     if option == 1:
-        return F_p
+        return round(F_p, 2)
     else:
-        return F_c
+        return round(F_c, 2)
 
 
 """
@@ -368,8 +368,7 @@ def Neighborhoods(v, path, neighbor, f_option, reduce_route):
 
     # 元の解のペナルティ関数評価値を保持
     P_eval = penaltyFunction(DefaultEdgeSet, f_option)
-    # print("デフォルト:{}".format(P_eval))
-    # print("デフォルト:{}".format(penaltyFunction(EdgeSet, f_option)))
+    # print("デフォルト:{}".format(type(penaltyFunction(EdgeSet, f_option))))
 
     # 渡されたノードvに繋がるエッジ2つ
     link_v = [i for i in EdgeSet if (v in i)]
@@ -1283,7 +1282,7 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
     for e in edgeList:
         E.append(e)
-        edge_labels[(e[0], e[1])] = cost[e[0]][e[1]]
+        edge_labels[(int(e[0]), int(e[1]))] = int(cost[int(e[0])][int(e[1])])
 
     for i in range(num_shelter):
         # labels[i] = df.ix[i].d
@@ -1335,14 +1334,12 @@ if __name__ == "__main__":
 
     df = createDataFrame("./csv/", filename)
     num_shelter = len(df.index)
-    num_shelter = 11
+    # num_shelter = 11
     print("顧客数:{}".format(num_shelter-1))
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
     cost = createCostMatrix(num_shelter)
-    print(cost[1][3])
-    # sys.exit()
 
     print(df[:11])
     # print(cost)
