@@ -2,12 +2,12 @@ class genom:
 
     genom_list = None
     evaluation = None
-    edge = None
+    distance = None
 
-    def __init__(self, genom_list, evaluation, edge):
+    def __init__(self, genom_list, evaluation, distance):
         self.genom_list = genom_list
         self.evaluation = evaluation
-        self.edge = edge
+        self.distance = distance
 
 
     def getGenom(self):
@@ -16,8 +16,8 @@ class genom:
     def getEvaluation(self):
         return self.evaluation
 
-    def getEdge(self):
-        return self.edge
+    def getDistance(self):
+        return self.distance
 
     def setGenom(self, genom_list):
         self.genom_list = genom_list
@@ -25,5 +25,5 @@ class genom:
     def setEvaluation(self, evaluation):
         self.evaluation = evaluation
 
-    def setEdge(self, edge):
-        self.edge = edge
+    def setDistance(self, distance):
+        self.distance = distance

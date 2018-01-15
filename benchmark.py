@@ -134,16 +134,16 @@ def graphPlot(edgeList, depot, title):
         plt.clf()
 
 if __name__ == "__main__":
-    # name = "vrpnc"
-    name = ["75a", "75b", "75c", "75d", "100a", "100b", "100c", "100d", "150a", "150b", "150c", "150d", "385"]
+    name = "kelly"
+    # name = ["75a", "75b", "75c", "75d", "100a", "100b", "100c", "100d", "150a", "150b", "150c", "150d", "385"]
     filename = []
-    for i in name:
-        # filename.append(name + str(i))
-        filename.append("tai" + i)
+    for i in range(1, 21):
+        filename.append(name + str(i))
+        # filename.append("tai" + i)
     print(filename)
 
     for i in filename:
-        df = createDataFrame("./csv/Taillard/", i)
+        df = createDataFrame("./csv/kelly/", i)
         num_shelter = len(df.index)
         # num_shelter = 11
         print("顧客数:{}".format(num_shelter-1))

@@ -284,20 +284,28 @@ def EAX(E_A, E_B):
     # intermediate = [[6, 5], [5, 8], [7, 1], [10, 1], [0, 9], [3, 0], [0, 4], \
     #  [2, 0], [2, 6], [8, 0], [7, 10], [9, 0], [3, 4]]
 
-    intermediate = [[6, 5], [5, 8], [7, 1], [10, 1], [0, 9], [3, 0], [0, 4], \
-     [2, 0], [0, 2], [8, 6], [7, 10], [9, 0], [3, 4]]
+    # intermediate = [[6, 5], [5, 8], [7, 1], [10, 1], [0, 9], [3, 0], [0, 4], \
+    #  [2, 0], [0, 2], [8, 6], [7, 10], [9, 0], [3, 4]]
 
     print(isHeiro(routeToPath(intermediate)))
     subtour = isHeiro(routeToPath(intermediate))
     if(subtour != 0):
-        EAXstep5(intermediate, subtour)
+        child = EAXstep5(intermediate, subtour)
+    else:
+        child = intermediate
 
-    return intermediate
+    return child
 
 
 """
 EAXのステップ5を処理する
-
+中間個体に部分巡回路が含まれる場合に，部分巡回路をランダムな順番で選択し，
+m個のルートのどれかに結合することでm個のルートからなる子を得る．
+@INPUT:
+    intermediate：中間個体のエッジ集合
+    subtourIndex：部分順回路のルートインデックス
+@OUTPUT:
+    child：子個体
 """
 def EAXstep5(intermediate, subtourIndex):
     while(subtourIndex != 0):
@@ -310,9 +318,10 @@ def EAXstep5(intermediate, subtourIndex):
         Ur = Ui[subnum]
         Ui.pop(subnum)
 
-        print(Ui)
-        print(Ur)
+        print("Ui:{}".format(Ui))
+        print("Ur:{}".format(Ur))
 
+        # UrとUiそれぞれのエッジの全ての組合せを調べる
         for e1, e2 in itertools.product(Ur, pathToRoute(Ui)):
             w1 = -cost[e1[0]][e1[1]] -cost[e2[0]][e2[1]] + \
             cost[e1[0]][e2[0]] + cost[e1[1]][e2[1]]
@@ -334,6 +343,8 @@ def EAXstep5(intermediate, subtourIndex):
                     adde1 = [e1[0], e2[1]]
                     adde2 = [e1[1], e2[0]]
 
+        # 全ての組合せから-w(e)-w(e')+w(e")+w(e''')を最小にする
+        # e∈Urとe∈Uj(j≠r)を探す
         intermediate.remove(rme1)
         intermediate.remove(rme2)
         intermediate.append(adde1)
@@ -532,10 +543,10 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
 
 if __name__ == '__main__':
-    filename = "R101"
+    filename = "vrpnc1"
 
-    df = createDataFrame("./csv/", filename)
-    num_shelter = 11
+    df = createDataFrame("./csv/Christ/", filename)
+    num_shelter = 21
 
     cost = createCostMatrix(num_shelter)
 

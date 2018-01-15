@@ -7,7 +7,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-filename = "data_r101"
+filename = "R101"
 
 df = pd.read_csv("./output/" + filename + "_result.csv")
 
