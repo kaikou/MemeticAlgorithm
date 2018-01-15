@@ -77,10 +77,10 @@ def createCostMatrix(num_shelter):
             if j == num_shelter - 1:
                 arr = np.append(arr, np.array([dis]), axis=0)
                 dis = []
-    print(df[0:11])
-    print("コスト行列-----------------------------------")
-    print(arr)
-    print("---------------------------------------------")
+    # print(df[0:11])
+    # print("コスト行列-----------------------------------")
+    # print(arr)
+    # print("---------------------------------------------")
     np.savetxt("./output/cost.csv", arr, delimiter=',', fmt='%.2f')
     return arr
 
@@ -313,7 +313,7 @@ def penaltyFunction(route, option):
 """
 def N_near(node, near):
     near_cost = np.empty((0, 2), int)
-    for i, c in enumerate(cost[node][:]):
+    for i, c in enumerate(cost[int(node)][:]):
         if i == 0:
             continue
         near_cost = np.append(near_cost, np.array([[i, c]]), axis=0)
@@ -1299,8 +1299,8 @@ def graphPlot(edgeList, isFirst, isLast, title):
     plt.legend()
     plt.xlabel("x")
     plt.ylabel("y")
-    plt.xlim(0, 70)
-    plt.ylim(0, 70)
+    # plt.xlim(0, 70)
+    # plt.ylim(0, 70)
     # plt.axis('off')
     # plt.grid()
 
@@ -1332,18 +1332,17 @@ def graphPlot(edgeList, isFirst, isLast, title):
 if __name__ == "__main__":
     filename = "vrpnc1"
 
-    df = createDataFrame("./csv/", filename)
+    df = createDataFrame("./csv/Christ/", filename)
     num_shelter = len(df.index)
-    # num_shelter = 11
+    # num_shelter = 21
     print("顧客数:{}".format(num_shelter-1))
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
     cost = createCostMatrix(num_shelter)
 
-    print(df[:11])
-    # print(cost)
-
+    print("対象ファイル名:{}".format(filename))
+    
     start = time.time()
     # セービング法でルートを構築する
     # デポを含まない２次元配列で受け取る
@@ -1367,8 +1366,7 @@ if __name__ == "__main__":
     random_order = [i for i in range(1, num_shelter)]
     random.shuffle(random_order)
 
-    graphPlot(pathToRoute(path), isFirst=1, isLast=0, title="Saving Route")
-
+    graphPlot(pathToRoute(path), isFirst=0, isLast=1, title="Saving Route")
     print(route)
     for n, i in enumerate(random_order):
         prePath = copy.deepcopy(path)
@@ -1389,7 +1387,7 @@ if __name__ == "__main__":
         time.sleep(0.01)
 
     route = pathToRoute(path)
-    graphPlot(route, isFirst=1, isLast=0, title="localSearch")
+    # graphPlot(route, isFirst=1, isLast=0, title="localSearch")
 
     route = modification(route)
     print(path)
