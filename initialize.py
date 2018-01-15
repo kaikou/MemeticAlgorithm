@@ -13,6 +13,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import sys, time
 import copy
+import csv
+import math
 
 # # 遺伝子情報の長さ
 # GENOM_LENGTH = 50
@@ -114,7 +116,7 @@ def savingMethod(num_shelter, cost):
         # for j in range(i+1, num_shelter):
         for j in range(1, num_shelter):
             s[i][j] = cost[i][0] + cost[0][j] - (LAMBDA * cost[i][j])
-    print(s) #セービング値
+    # print(s) #セービング値
 
     """
     経路の結合処理
@@ -175,7 +177,7 @@ def savingMethod(num_shelter, cost):
                     # graphPlot(pathToRoute(createEdgeSet(route)), isFirst=0, isLast=0)
                     break
 
-    print("route:{}".format(route))
+    # print("route:{}".format(route))
     print("demand:{}".format(demand))
     print("distance:{}".format(distance))
     print(drt)
@@ -297,9 +299,9 @@ def penaltyFunction(route, option):
     F_p = F + (ALPHA * F_c)
     # print("F:{}, F_c:{}, F_d:{}".format(F, F_c, F_d))
     if option == 1:
-        return round(F_p, 2)
+        return round(F_p, 2) # ペナルティ間数値
     else:
-        return round(F_c, 2)
+        return round(F_c, 2) # ペナルティ項のみ
 
 
 """
@@ -1102,20 +1104,20 @@ def routeToPath(route):
         e = route[0]
         find_flag = False
         heiro = False
-        if e[0] == 0 and e[1] == 0:
+        if int(e[0]) == 0 and int(e[1]) == 0:
             route.remove(e)
             continue
         # エッジ端のどちらかに0を含むか
-        elif e[0] == 0 or e[1] == 0:
+        elif int(e[0]) == 0 or int(e[1]) == 0:
             R.append(e)
             route.remove(e)
             # 0じゃない方をv_eにセット
-            v_e = e[1] if e[0] == 0 else e[0]
+            v_e = int(e[1]) if int(e[0]) == 0 else int(e[0])
         else: # 0を含まない閉路を発見
             R.append(e)
             route.remove(e)
-            v_e = e[1]
-            v_e_1 = e[0]
+            v_e = int(e[1])
+            v_e_1 = int(e[0])
             heiro = True
 
         while(not(find_flag)):
@@ -1123,7 +1125,7 @@ def routeToPath(route):
             if (v_e not in np.unique(route)):
                 print("見つからない")
                 return False
-            e = random.choice(list(filter(lambda x: v_e in x, route)))
+            e = random.choice(list(filter(lambda x: int(v_e) in x, route)))
             R.append(e)
             route.remove(e)
             # print("-------------------")
@@ -1133,7 +1135,7 @@ def routeToPath(route):
             # print("Path:{}".format(Path))
 
             # eの端点のv_eでない方を新たにv_eとする
-            v_e = e[0] if v_e == e[1] else e[1]
+            v_e = int(e[0]) if v_e == int(e[1]) else int(e[1])
             # print("次の端点:{}".format(v_e))
 
             if(heiro == True):
@@ -1207,8 +1209,7 @@ def modification(route):
 
     while(r):
         ExIdx = random.choice(r)
-        print("")
-        print("超過ルートのインデックス:{}".format(ExIdx))
+        # print("超過ルートのインデックス:{}".format(ExIdx))
         print("実行不可能解あり")
         prePath = copy.deepcopy(path)
 
@@ -1224,11 +1225,11 @@ def modification(route):
 
         if prePath == path:
             print("修正失敗")
-            return route
+            return route, "error"
 
         r = []
         r, excess = checkCapacity(path)
-    return modi_route
+    return modi_route, "success"
 
 """
 modification()中に用いる
@@ -1334,7 +1335,7 @@ if __name__ == "__main__":
 
     df = createDataFrame("./csv/Christ/", filename)
     num_shelter = len(df.index)
-    # num_shelter = 21
+    num_shelter = 11
     print("顧客数:{}".format(num_shelter-1))
 
     # 各避難所間の移動コスト行列を生成する
@@ -1342,53 +1343,87 @@ if __name__ == "__main__":
     cost = createCostMatrix(num_shelter)
 
     print("対象ファイル名:{}".format(filename))
-    
+    print("トラック容量:{}".format(CAPACITY))
+
+    paramArray = []
+    param = 30
+    f = open("./output/ini/1_ini_" + filename + ".csv", "w")
+    writer = csv.writer(f, lineterminator="\n")
+    paramList = ["α", "値", "実行", "ルート数", "距離"]
+    paramArray.append(paramList)
+    paramList = []
+    bestDistance  = float("inf")
+    bestRoute = []
+
+
     start = time.time()
-    # セービング法でルートを構築する
-    # デポを含まない２次元配列で受け取る
-    route = savingMethod(num_shelter, cost)
+    while(True):
+        print("--------------------------------------------------")
+        ALPHA = 0.01 * np.power(math.pow(10, (1/10)), param)
+        print("パラメータα:{}".format(ALPHA))
+
+        # セービング法でルートを構築する
+        # デポを含まない２次元配列で受け取る
+        route = savingMethod(num_shelter, cost)
+        # セービング方で得られた解にデポをつける
+        path = createEdgeSet(route)
+        print("ルート数(セービング法)：{}".format(len(path)))
+
+        random_order = [i for i in range(1, num_shelter)]
+        random.shuffle(random_order)
+        # graphPlot(pathToRoute(path), isFirst=0, isLast=1, title="Saving Route")
+        # while(True):
+        # prePath = copy.deepcopy(path)
+        for n, i in enumerate(random_order):
+            prePath = copy.deepcopy(path)
+            local_route = Neighborhoods(i, path, "10inter", f_option=1, reduce_route=1)
+            path = routeToPath(local_route)
+            local_route = Neighborhoods(i, path, "11inter", f_option=1, reduce_route=1)
+            path = routeToPath(local_route)
+            local_route = Neighborhoods(i, path, "01inter", f_option=1, reduce_route=1)
+            path = routeToPath(local_route)
+            local_route = Neighborhoods(i, path, "2opt", f_option=1, reduce_route=1)
+            path = routeToPath(local_route)
+            if path == False:
+                path = copy.deepcopy(prePath)
+            # graphPlot(local_route, isFirst=0, isLast=0, title="local search")
+            sys.stdout.write("\r%d番目ノードの局所探索" % n)
+            sys.stdout.flush()
+            time.sleep(0.01)
+            # if(prePath == path):
+            #     break
+
+        print("")
+        print("ルート数(P関数局所探索後)：{}".format(len(path)))
+        route = pathToRoute(path)
+        # graphPlot(route, isFirst=1, isLast=0, title="localSearch")
+
+        if(penaltyFunction(route, 2) > 0):
+            route, result = modification(route)
+            print("修正結果:{}".format(result))
+        else:
+            result = "success"
+        # graphPlot(route, isFirst=0, isLast=0, title="modification")
+        route_num = len(routeToPath(route))
+        distance = penaltyFunction(route, 0)
+        print("")
+        print("ルート数(修正後)：{}".format(route_num))
+        print("総距離:{}".format(distance))
+        if(distance < bestDistance):
+            bestRoute = copy.deepcopy(route)
+
+        paramList = [param, ALPHA, result, route_num, distance]
+        paramArray.append(paramList)
+        paramList = []
+
+
+        param += 1
+        if(param > 40):
+            break
     elapsed_time = time.time() - start
+    writer.writerows(paramArray)
+    writer.writerow(bestRoute)
+    writer.writerow(["計算時間：", elapsed_time])
+    f.close()
+
     print("計算時間：" + str(elapsed_time) + "[sec]")
-    print("ルート数：{}".format(len(route)))
-
-    # セービング方で得られた解にデポをつける
-    path = createEdgeSet(route)
-
-    pathToRoute(path)
-
-    # test = [[0,1], [2, 1], [2, 3], [3, 0], [4, 5], [5, 6], [4, 0], [6, 0], \
-    #         [7, 8], [8, 9], [7, 9], [10, 11], [12, 11], [12, 10]]
-    # test = [[0, 1], [1, 3], [3, 4], [2, 4], [2, 0], [0, 5], [5, 0]]
-    # path = routeToPath(test)
-    # print(isHeiro(path))
-
-
-    random_order = [i for i in range(1, num_shelter)]
-    random.shuffle(random_order)
-
-    graphPlot(pathToRoute(path), isFirst=0, isLast=1, title="Saving Route")
-    print(route)
-    for n, i in enumerate(random_order):
-        prePath = copy.deepcopy(path)
-        local_route = Neighborhoods(i, path, "10inter", f_option=1, reduce_route=1)
-        path = routeToPath(local_route)
-        local_route = Neighborhoods(i, path, "11inter", f_option=1, reduce_route=1)
-        path = routeToPath(local_route)
-        local_route = Neighborhoods(i, path, "01inter", f_option=1, reduce_route=1)
-        path = routeToPath(local_route)
-        local_route = Neighborhoods(i, path, "2opt", f_option=1, reduce_route=1)
-        path = routeToPath(local_route)
-        if path == False:
-            path = copy.deepcopy(prePath)
-        # graphPlot(local_route, isFirst=0, isLast=0, title="local search")
-        # print("{}回目".format(n))
-        sys.stdout.write("\r%d個目" % n)
-        sys.stdout.flush()
-        time.sleep(0.01)
-
-    route = pathToRoute(path)
-    # graphPlot(route, isFirst=1, isLast=0, title="localSearch")
-
-    route = modification(route)
-    print(path)
-    graphPlot(route, isFirst=0, isLast=1, title="modification")
