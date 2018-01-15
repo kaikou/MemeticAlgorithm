@@ -53,4 +53,4 @@ def txt2csv(filepath, filename):
 
 
 if __name__ == '__main__':
-    txt2csv("./data/solomon_100/", "101")
+    txt2csv("./data/solomon_100/", "R102")

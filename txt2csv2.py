@@ -15,13 +15,15 @@ def txt2csv(filepath, filename):
     lineCount = 0
     data = []
     csv_ = []
+    xyd = ["x", "y", "d"]
     num = ""
     flag = 0
     readfile = filepath + filename + ".txt"
     for line in open(readfile, "r"):
         column = 0
         lineCount += 1
-        if lineCount < 3:
+        if lineCount == 1:
+            csv_.append(xyd)
             continue
         for char in line: # 1文字ずつ
             if column >= 3:
@@ -35,7 +37,7 @@ def txt2csv(filepath, filename):
                     #     data = []
                     #     continue
                     data.append(int(num))
-                    print(data)
+                    # print(data)
                     column += 1
                     num = ""
                     flag = 0
@@ -55,4 +57,4 @@ def txt2csv(filepath, filename):
 
 
 if __name__ == '__main__':
-    txt2csv("./data/Christ/", "vrpnc")
+    txt2csv("./data/Christ/", "vrpnc14")
