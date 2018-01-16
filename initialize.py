@@ -33,7 +33,7 @@ MAX_GENERATION = 30
 # 使用できる車両数
 VEHICLE = 3
 # 車両の最大積載量
-CAPACITY = 160
+CAPACITY = 200
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 # N_near()関数で，どこまで近くのノードに局所探索するか
@@ -1331,99 +1331,100 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
 
 if __name__ == "__main__":
-    filename = "vrpnc1"
+    for i in range(4, 15):
+        filename = "vrpnc" + str(i)
 
-    df = createDataFrame("./csv/Christ/", filename)
-    num_shelter = len(df.index)
-    num_shelter = 11
-    print("顧客数:{}".format(num_shelter-1))
+        df = createDataFrame("./csv/Christ/", filename)
+        num_shelter = len(df.index)
+        # num_shelter = 11
+        print("顧客数:{}".format(num_shelter-1))
 
-    # 各避難所間の移動コスト行列を生成する
-    # 2次元配列costで保持
-    cost = createCostMatrix(num_shelter)
+        # 各避難所間の移動コスト行列を生成する
+        # 2次元配列costで保持
+        cost = createCostMatrix(num_shelter)
 
-    print("対象ファイル名:{}".format(filename))
-    print("トラック容量:{}".format(CAPACITY))
+        print("対象ファイル名:{}".format(filename))
+        print("トラック容量:{}".format(CAPACITY))
 
-    paramArray = []
-    param = 30
-    f = open("./output/ini/1_ini_" + filename + ".csv", "w")
-    writer = csv.writer(f, lineterminator="\n")
-    paramList = ["α", "値", "実行", "ルート数", "距離"]
-    paramArray.append(paramList)
-    paramList = []
-    bestDistance  = float("inf")
-    bestRoute = []
-
-
-    start = time.time()
-    while(True):
-        print("--------------------------------------------------")
-        ALPHA = 0.01 * np.power(math.pow(10, (1/10)), param)
-        print("パラメータα:{}".format(ALPHA))
-
-        # セービング法でルートを構築する
-        # デポを含まない２次元配列で受け取る
-        route = savingMethod(num_shelter, cost)
-        # セービング方で得られた解にデポをつける
-        path = createEdgeSet(route)
-        print("ルート数(セービング法)：{}".format(len(path)))
-
-        random_order = [i for i in range(1, num_shelter)]
-        random.shuffle(random_order)
-        # graphPlot(pathToRoute(path), isFirst=0, isLast=1, title="Saving Route")
-        # while(True):
-        # prePath = copy.deepcopy(path)
-        for n, i in enumerate(random_order):
-            prePath = copy.deepcopy(path)
-            local_route = Neighborhoods(i, path, "10inter", f_option=1, reduce_route=1)
-            path = routeToPath(local_route)
-            local_route = Neighborhoods(i, path, "11inter", f_option=1, reduce_route=1)
-            path = routeToPath(local_route)
-            local_route = Neighborhoods(i, path, "01inter", f_option=1, reduce_route=1)
-            path = routeToPath(local_route)
-            local_route = Neighborhoods(i, path, "2opt", f_option=1, reduce_route=1)
-            path = routeToPath(local_route)
-            if path == False:
-                path = copy.deepcopy(prePath)
-            # graphPlot(local_route, isFirst=0, isLast=0, title="local search")
-            sys.stdout.write("\r%d番目ノードの局所探索" % n)
-            sys.stdout.flush()
-            time.sleep(0.01)
-            # if(prePath == path):
-            #     break
-
-        print("")
-        print("ルート数(P関数局所探索後)：{}".format(len(path)))
-        route = pathToRoute(path)
-        # graphPlot(route, isFirst=1, isLast=0, title="localSearch")
-
-        if(penaltyFunction(route, 2) > 0):
-            route, result = modification(route)
-            print("修正結果:{}".format(result))
-        else:
-            result = "success"
-        # graphPlot(route, isFirst=0, isLast=0, title="modification")
-        route_num = len(routeToPath(route))
-        distance = penaltyFunction(route, 0)
-        print("")
-        print("ルート数(修正後)：{}".format(route_num))
-        print("総距離:{}".format(distance))
-        if(distance < bestDistance):
-            bestRoute = copy.deepcopy(route)
-
-        paramList = [param, ALPHA, result, route_num, distance]
+        paramArray = []
+        param = 1
+        f = open("./output/ini/1_ini_" + filename + ".csv", "w")
+        writer = csv.writer(f, lineterminator="\n")
+        paramList = ["α", "値", "実行", "ルート数", "距離"]
         paramArray.append(paramList)
         paramList = []
+        bestDistance  = float("inf")
+        bestRoute = []
 
 
-        param += 1
-        if(param > 40):
-            break
-    elapsed_time = time.time() - start
-    writer.writerows(paramArray)
-    writer.writerow(bestRoute)
-    writer.writerow(["計算時間：", elapsed_time])
-    f.close()
+        start = time.time()
+        while(True):
+            print("--------------------------------------------------")
+            ALPHA = 0.01 * np.power(math.pow(10, (1/10)), param)
+            print("パラメータα:{}".format(ALPHA))
 
-    print("計算時間：" + str(elapsed_time) + "[sec]")
+            # セービング法でルートを構築する
+            # デポを含まない２次元配列で受け取る
+            route = savingMethod(num_shelter, cost)
+            # セービング方で得られた解にデポをつける
+            path = createEdgeSet(route)
+            print("ルート数(セービング法)：{}".format(len(path)))
+
+            random_order = [i for i in range(1, num_shelter)]
+            random.shuffle(random_order)
+            # graphPlot(pathToRoute(path), isFirst=0, isLast=1, title="Saving Route")
+            # while(True):
+            # prePath = copy.deepcopy(path)
+            for n, i in enumerate(random_order):
+                prePath = copy.deepcopy(path)
+                local_route = Neighborhoods(i, path, "10inter", f_option=1, reduce_route=1)
+                path = routeToPath(local_route)
+                local_route = Neighborhoods(i, path, "11inter", f_option=1, reduce_route=1)
+                path = routeToPath(local_route)
+                local_route = Neighborhoods(i, path, "01inter", f_option=1, reduce_route=1)
+                path = routeToPath(local_route)
+                local_route = Neighborhoods(i, path, "2opt", f_option=1, reduce_route=1)
+                path = routeToPath(local_route)
+                if path == False:
+                    path = copy.deepcopy(prePath)
+                # graphPlot(local_route, isFirst=0, isLast=0, title="local search")
+                sys.stdout.write("\r%d番目ノードの局所探索" % n)
+                sys.stdout.flush()
+                time.sleep(0.01)
+                # if(prePath == path):
+                #     break
+
+            print("")
+            print("ルート数(P関数局所探索後)：{}".format(len(path)))
+            route = pathToRoute(path)
+            # graphPlot(route, isFirst=1, isLast=0, title="localSearch")
+
+            if(penaltyFunction(route, 2) > 0):
+                route, result = modification(route)
+                print("修正結果:{}".format(result))
+            else:
+                result = "success"
+            # graphPlot(route, isFirst=0, isLast=0, title="modification")
+            route_num = len(routeToPath(route))
+            distance = penaltyFunction(route, 0)
+            print("")
+            print("ルート数(修正後)：{}".format(route_num))
+            print("総距離:{}".format(distance))
+            if(distance < bestDistance):
+                bestRoute = copy.deepcopy(route)
+
+            paramList = [param, ALPHA, result, route_num, distance]
+            paramArray.append(paramList)
+            paramList = []
+
+
+            param += 1
+            if(param > 40):
+                break
+        elapsed_time = time.time() - start
+        writer.writerows(paramArray)
+        writer.writerow(bestRoute)
+        writer.writerow(["計算時間：", elapsed_time])
+        f.close()
+
+        print("計算時間：" + str(elapsed_time) + "[sec]")
