@@ -1113,6 +1113,7 @@ def Neighborhoods(v, path, f_option, reduce_route):
                 elif current_function > P_eval:
                     EdgeSet = copy.deepcopy(bestSet)
                 else:
+                    P_eval = current_function
                     bestSet = copy.deepcopy(EdgeSet)
     return bestSet
 
