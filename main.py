@@ -24,9 +24,9 @@ import copy
 import itertools
 
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 3
+MAX_GENOM_LIST = 30
 # 各両親から生成される子個体の数
-MAX_CHILDREN = 5
+MAX_CHILDREN = 20
 # # 遺伝子選択数
 # SELECT_GENOM = 20
 # # 個体突然変異確率
@@ -34,21 +34,21 @@ MAX_CHILDREN = 5
 # # 遺伝子突然変異確率
 # GENOM_MUTATION = 0.1
 # 繰り返す世代数
-MAX_GENERATION = 10
+MAX_GENERATION = 100
 # 使用できる車両数
-VEHICLE = 1
+m = 5
 # 車両の最大積載量
-CAPACITY = 60
+CAPACITY = 160
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 # N_near()関数で，どこまで近くのノードに局所探索するか
-NEAR = 5
+NEAR = 10
 # penaltyFunction()で，容量制約違反に課すペナルティの係数
-ALPHA = 5
+ALPHA = 0.5
 # penaltyFunction()で，経路長違反に課すペナルティの係数
 BETA = 1.0
 # penaltyFunction()で，経路長違反とする距離
-D = 40
+D = float("inf")
 
 
 
@@ -74,22 +74,21 @@ def createDataFrame(filepath, data_name):
 """
 def createCostMatrix(num_shelter):
     dis = []
-    arr = np.empty((0, num_shelter), int) #小数点以下を加える→float型
+    arr = np.empty((0, num_shelter), float) #小数点以下を加える→float型
 
     for i in range(num_shelter):
         for j in range(num_shelter):
             x_crd = df.ix[j].x - df.ix[i].x
             y_crd = df.ix[j].y - df.ix[i].y
 
-            dis.append(int(np.sqrt(np.power(x_crd, 2) + np.power(y_crd, 2))))
+            dis.append(round(np.sqrt(np.power(x_crd, 2) + np.power(y_crd, 2)), 2))
             if j == num_shelter - 1:
                 arr = np.append(arr, np.array([dis]), axis=0)
                 dis = []
-
-    print(df[0:11])
-    print("コスト行列-----------------------------------")
-    print(arr)
-    print("---------------------------------------------")
+    # print(df[0:11])
+    # print("コスト行列-----------------------------------")
+    # print(arr)
+    # print("---------------------------------------------")
     np.savetxt("./output/cost.csv", arr, delimiter=',', fmt='%.2f')
     return arr
 
@@ -224,7 +223,7 @@ def savingMethod(num_shelter, cost):
     demand = []
     distance = []
     # plot = []
-    drt = 0
+    drt = 0.00
     for i in random_order1:
         if q[i] > 0:
             ii = i
@@ -244,9 +243,9 @@ def savingMethod(num_shelter, cost):
                     break
 
     # print("route:{}".format(route))
-    # print("demand:{}".format(demand))
-    # print("distance:{}".format(distance))
-    # print(drt)
+    print("demand:{}".format(demand))
+    print("distance:{}".format(distance))
+    print(drt)
     # graphPlot(pathToRoute(createEdgeSet(route)), isFirst=0, isLast=1)
     return route, drt
 
@@ -296,41 +295,50 @@ def routeToPath(route):
         e = route[0]
         find_flag = False
         heiro = False
+        if int(e[0]) == 0 and int(e[1]) == 0:
+            route.remove(e)
+            continue
         # エッジ端のどちらかに0を含むか
-        if e[0] == 0 or e[1] == 0:
+        elif int(e[0]) == 0 or int(e[1]) == 0:
             R.append(e)
             route.remove(e)
             # 0じゃない方をv_eにセット
-            v_e = e[1] if e[0] == 0 else e[0]
+            v_e = int(e[1]) if int(e[0]) == 0 else int(e[0])
         else: # 0を含まない閉路を発見
             R.append(e)
             route.remove(e)
-            v_e = e[1]
-            v_e_1 = e[0]
+            v_e = int(e[1])
+            v_e_1 = int(e[0])
             heiro = True
 
         while(not(find_flag)):
             # v_eを含むエッジをroute内から探しeにセット
-            e = random.choice(list(filter(lambda x: v_e in x, route)))
+            if (v_e not in np.unique(route)):
+                print("見つからない")
+                return False
+            e = random.choice(list(filter(lambda x: int(v_e) in x, route)))
             R.append(e)
             route.remove(e)
+            # print("-------------------")
+            # print("v_e:{}".format(v_e))
+            # print("v_eを含むエッジ:{}".format(e))
+            # print("route:{}".format(route))
+            # print("Path:{}".format(Path))
 
             # eの端点のv_eでない方を新たにv_eとする
-            v_e = e[0] if v_e == e[1] else e[1]
+            v_e = int(e[0]) if v_e == int(e[1]) else int(e[1])
             # print("次の端点:{}".format(v_e))
 
-            # 次の端点が0だった場合
-            if(v_e == 0):
+            if(heiro == True):
+                if(v_e == v_e_1):
+                    Path.append(R)
+                    v_e_1 = 0
+                    R=[]
+                    find_flag = True
+            elif(v_e == 0):
                 Path.append(R)
                 R = []
                 find_flag = True
-            # 閉路探索中に最初のノードを発見した場合
-            if(heiro == True and v_e == v_e_1):
-                Path.append(R)
-                v_e_1 = 0
-                R=[]
-                find_flag = True
-    # print(Path)
     return(Path)
 
 """
@@ -353,6 +361,7 @@ def pathToRoute(path):
 @INPUT:
     route: 解の２次元リスト
     option: どのように評価するか
+        2: ペナルティ項のみ
         1: ペナルティ関数による評価
         0: 総移動コストのみの評価
 @OUTPUT:
@@ -366,31 +375,51 @@ def penaltyFunction(route, option):
     R_demands = 0
     R_cost = 0
     path = routeToPath(route)
+
     # ルート総距離
     for e in route:
-        F += cost[e[0]][e[1]]
+        F += cost[int(e[0])][int(e[1])]
 
     if option == 0:
-        return F
+        return round(F, 2)
 
     for edges in path:
+
+        """
+        容量制約違反の計算
+        """
         nodes = np.unique(edges)
         for n in nodes: # 各ルートの合計需要
             R_demands += df.ix[n].d
-        F_c += abs(R_demands - CAPACITY) # ルート内の需要超過
+
+        if R_demands > CAPACITY:
+            F_c += R_demands - CAPACITY # ルート内の需要超過
+        else:
+            F_c += 0
+            # F_c += abs(R_demands - CAPACITY) # ルート内の需要超過
         R_demands = 0
 
+        """
+        route duration制約違反の計算
+        """
         for e in edges:
-            R_cost += cost[e[0]][e[1]]
-        if R_cost <= D:
-            R_cost = 0
-            # abs(R_cost)
-        F_d += R_cost - D
+            R_cost += cost[int(e[0])][int(e[1])]
+        if R_cost > D:
+            F_d += R_cost - D
+        else:
+            F_d += 0
+            # F_d += abs(R_cost - D)
         R_cost = 0
 
     # ペナルティ関数
+
     F_p = F + (ALPHA * F_c) + (BETA * F_d)
-    return F_p
+    # F_p = F + (ALPHA * F_c)
+    # print("F:{}, F_c:{}, F_d:{}".format(F, F_c, F_d))
+    if option == 1:
+        return round(F_p, 2) # ペナルティ間数値
+    else:
+        return round(F_c + F_d, 2) # ペナルティ項のみ
 
 
 """
@@ -491,8 +520,8 @@ EAXのステップ1と2を処理する関数
     C: AB-cycleのリスト
 """
 def preEAX(P_A, P_B):
-    E_A = P_A.getEdge() # 親Aのエッジリストを取得
-    E_B = P_B.getEdge() # 親Bのエッジリストを取得
+    E_A = P_A.getGenom() # 親Aのエッジリストを取得
+    E_B = P_B.getGenom() # 親Bのエッジリストを取得
 
     """
     ステップ1: 親Aと親Bから集合G_ABを生成する
@@ -505,6 +534,10 @@ def preEAX(P_A, P_B):
             G_AB.remove(e1)
             G_AB.remove(e2)
     # print("G_AB:{}".format(G_AB))
+    # 全く同じルートではG_ABが構築できない
+    if G_AB == []:
+        # print("G_ABが構築できない")
+        return False
 
     """
     ステップ2: G_AB上でAB-cycleを構築する
@@ -558,19 +591,19 @@ def preEAX(P_A, P_B):
                 R_A = [x for x in R_A if (x and x in G_AB)]
                 ABflag = True
                 # print("C:{}".format(C))
-    print("AB-cycle:{}".format(C))
+    # print("AB-cycle:{}".format(C))
     return C
 
 
 def edgeAssemblyCrossover(P_A, P_B, ABc):
-    E_A = P_A.getEdge() # 親Aのエッジリストを取得
-    E_B = P_B.getEdge() # 親Bのエッジリストを取得
+    E_A = P_A.getGenom() # 親Aのエッジリストを取得
+    E_B = P_B.getGenom() # 親Bのエッジリストを取得
 
     """
     ステップ3:E-setを構成する
     """
     E_set = random.choice(ABc) # Single戦略
-    print("E-set:{}".format(E_set))
+    # print("E-set:{}".format(E_set))
     # graphPlot(E_set, isFirst=1, isLast=0, title="E-set")
 
     """
@@ -582,14 +615,15 @@ def edgeAssemblyCrossover(P_A, P_B, ABc):
     interB = [x for x in E_B if (x and x in E_set)]
     intermediate = interA + interB
 
-    print("中間:{}".format(intermediate))
+    # print("中間:{}".format(intermediate))
 
     """
     ステップ5:部分順回路が含まれる場合，結合する
     """
-    print(isHeiro(routeToPath(intermediate)))
+    # print(isHeiro(routeToPath(intermediate)))
     subtour = isHeiro(routeToPath(intermediate))
     if(subtour != 0):
+        # print("EAX Step5処理")
         child = EAXstep5(intermediate, subtour)
     else:
         child = intermediate
@@ -609,9 +643,13 @@ m個のルートのどれかに結合することでm個のルートからなる
 """
 def EAXstep5(intermediate, subtourIndex):
     while(subtourIndex != 0):
-        best = 0
+        # graphPlot(intermediate, isFirst=0, isLast=0, title="Step5")
+        print("subtourIndex:{}".format(subtourIndex))
+        best = float("inf")
+
+        # 元の解の距離
         for e in intermediate:
-            best += cost[e[0]][e[1]]
+            best += cost[int(e[0])][int(e[1])]
 
         Ui = routeToPath(intermediate) # エッジ集合(3次元リスト)
         subnum = random.choice(subtourIndex) # サブツアーインデックスをランダムに選ぶ
@@ -623,11 +661,11 @@ def EAXstep5(intermediate, subtourIndex):
 
         # UrとUiそれぞれのエッジの全ての組合せを調べる
         for e1, e2 in itertools.product(Ur, pathToRoute(Ui)):
-            w1 = -cost[e1[0]][e1[1]] -cost[e2[0]][e2[1]] + \
-            cost[e1[0]][e2[0]] + cost[e1[1]][e2[1]]
+            w1 = -cost[int(e1[0])][int(e1[1])] -cost[int(e2[0])][int(e2[1])] + \
+            cost[int(e1[0])][int(e2[0])] + cost[int(e1[1])][int(e2[1])]
 
-            w2 = -cost[e1[0]][e1[1]] -cost[e2[0]][e2[1]] + \
-            cost[e1[0]][e2[1]] + cost[e1[1]][e2[0]]
+            w2 = -cost[int(e1[0])][int(e1[1])] -cost[int(e2[0])][int(e2[1])] + \
+            cost[int(e1[0])][int(e2[1])] + cost[int(e1[1])][int(e2[0])]
 
             w = min(w1, w2)
 
@@ -637,11 +675,11 @@ def EAXstep5(intermediate, subtourIndex):
                 rme1 = e1
                 rme2 = e2
                 if(idx == 1):
-                    adde1 = [e1[0], e2[0]]
-                    adde2 = [e1[1], e2[1]]
+                    adde1 = [int(e1[0]), int(e2[0])]
+                    adde2 = [int(e1[1]), int(e2[1])]
                 else:
-                    adde1 = [e1[0], e2[1]]
-                    adde2 = [e1[1], e2[0]]
+                    adde1 = [int(e1[0]), int(e2[1])]
+                    adde2 = [int(e1[1]), int(e2[0])]
 
         # 全ての組合せから-w(e)-w(e')+w(e")+w(e''')を最小にする
         # e∈Urとe∈Uj(j≠r)を探す
@@ -653,6 +691,72 @@ def EAXstep5(intermediate, subtourIndex):
         subtourIndex = isHeiro(routeToPath(intermediate))
 
     return intermediate
+
+
+"""
+modification()中に用いる
+入力された3次元リストを元に，トラックの容量超過をしているルートの
+インデックスとルート毎の総需要量のリストを返す
+"""
+def checkCapacity(path):
+    excess = []
+    r = []
+    r_demands = 0
+
+    for i, heiro in enumerate(path):
+        for n in np.unique(heiro):
+            r_demands += df.ix[n].d
+        demand = r_demands - CAPACITY\
+         # if r_demands > CAPACITY else 0
+        excess.append(demand)
+        if(demand > 0):
+            r.append(i)
+        r_demands = 0
+        demand = 0
+    print(r)
+    print(excess)
+    # ルート内の需要オーバーの合計が0を超えていたら
+    if(sum(excess) > 0):
+        return r, False
+    else:
+        return r, excess
+
+
+def plotDepot(title):
+    N = []
+    G = nx.Graph()
+    pos = {}  #ノードの位置情報格納
+
+    N.append(0)
+    pos[0] = (df.ix[0].x, df.ix[0].y)
+
+    E = []
+    edge_labels = {}
+    sum_cost = 0
+    labels = {}
+    # for e in edgeList:
+    #     E.append(e)
+    #     edge_labels[(int(e[0]), int(e[1]))] = int(cost[int(e[0])][int(e[1])])
+
+    for i in range(num_shelter):
+        # labels[i] = df.ix[i].d
+        labels[i] = i
+
+    G.add_nodes_from(N)
+    # G.add_edges_from(E)
+    nx.draw_networkx_nodes(G, pos, node_size=50, node_color="b")
+    nx.draw_networkx_edges(G, pos, width=1)
+    # nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
+    # nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
+    # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
+
+    plt.legend()
+    plt.xlabel("x-coordinate")
+    plt.ylabel("y-coordinate")
+    plt.title(title)
+    plt.savefig("./output/MA/result_" + filename +".png")  # save as png
+    plt.show()
+    return(0)
 
 """
 グラフをプロットする
@@ -681,7 +785,7 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
     for e in edgeList:
         E.append(e)
-        edge_labels[(e[0], e[1])] = cost[e[0]][e[1]]
+        edge_labels[(int(e[0]), int(e[1]))] = int(cost[int(e[0])][int(e[1])])
 
     for i in range(num_shelter):
         # labels[i] = df.ix[i].d
@@ -689,76 +793,84 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
     G.add_nodes_from(N)
     G.add_edges_from(E)
-    nx.draw_networkx_nodes(G, pos, node_size=80, node_color="r")
+    nx.draw_networkx_nodes(G, pos, node_size=20, node_color="r")
     nx.draw_networkx_edges(G, pos, width=1)
     # nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
-    nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
+    # nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
+    # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
 
     plt.legend()
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.xlim(0, 70)
-    plt.ylim(0, 70)
+    plt.xlabel("x-coordinate")
+    plt.ylabel("y-coordinate")
+    # plt.xlim(0, 70)
+    # plt.ylim(0, 70)
     # plt.axis('off')
     # plt.grid()
+
+    plot_path = routeToPath(edgeList)
 
     # 元の経路
     if isFirst == 1:
         print("最初の経路:{}".format(penaltyFunction(edgeList, 0)))
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
-        print("ルート数:{}".format(len(routeToPath(edgeList))))
+        print("ルート数:{}".format(len(plot_path)))
         plt.title(title)
         plt.pause(0.01)
         plt.figure()
 
     # 連続プロット中
     if isLast == 0:
+        plt.title(title)
         plt.pause(0.01)
         plt.clf()
     else:
+        print(checkCapacity(routeToPath(edgeList)))
         plt.title(title)
         print("終わり")
         print("最終経路:{}".format(penaltyFunction(edgeList, 0)))
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
-        print("ルート数:{}".format(len(routeToPath(edgeList))))
-        plt.savefig("./output/" + filename +".png")  # save as png
-        plt.show()
-        return(0)
+        print("ルート数:{}".format(len(plot_path)))
+        plotDepot(title)
 
 
 if __name__ == '__main__':
-    filename = "R101"
+    filename = "vrpnc1"
     # 避難所情報のデータフレームを生成する
     # 引数[0]:ファイルパス，[1]:ファイル名
-    df = createDataFrame("./csv/", filename)
+    df = createDataFrame("./csv/Christ/", filename)
     num_shelter = len(df.index)
-    num_shelter = 21
+    # num_shelter = 21
     result_df = pd.DataFrame(index=[], columns=['世代', '総移動コスト'])
 
     # 各避難所間の移動コスト行列を生成する
     # 2次元配列costで保持
     cost = createCostMatrix(num_shelter)
-
     # 第一世代の個体集団を生成
     current_generation_individual_group = []
+    indi_count = 0
     print("現行の個体集団")
-    for i in range(MAX_GENOM_LIST):
-        # current_generation_individual_group.append(createGenom(num_shelter, VEHICLE))
+    # for i in range(MAX_GENOM_LIST):
+    while(True):
+        # current_generation_individual_group.append(createGenom(num_shelter, m))
         sa_route, distance = savingMethod(num_shelter, cost)
+        if len(sa_route) != m:
+            continue
         route = pathToRoute(savingRoute(sa_route))
         evaluation = penaltyFunction(route, option=1)
-
         current_generation_individual_group.append(ga.genom(route, evaluation, distance))
-        print("個体{}:{}".format(i, current_generation_individual_group[i].getGenom()))
-        print("評価{}".format(current_generation_individual_group[i].getEvaluation()))
-        print("距離{}".format(current_generation_individual_group[i].getDistance()))
 
-    graphPlot(current_generation_individual_group[0].getGenom(), isFirst=1, isLast=0, title="第1世代")
+        # print("個体【{}】:{}".format(indi_count, current_generation_individual_group[indi_count].getGenom()))
+        # print("評価{}".format(current_generation_individual_group[indi_count].getEvaluation()))
+        # print("距離{}".format(current_generation_individual_group[indi_count].getDistance()))
+        # print("-----------------------------------------------------------------")
+        indi_count += 1
+        if indi_count == MAX_GENOM_LIST:
+            break
 
+    # graphPlot(current_generation_individual_group[0].getGenom(), isFirst=0, isLast=0, title="1st generation")
     monotonous = current_generation_individual_group[0].getDistance()
     mono_count = 0
-    sys.exit()
+
     """
     ここまで第一世代
     この先繰り返し
@@ -766,13 +878,6 @@ if __name__ == '__main__':
     for count_ in range(1, MAX_GENERATION + 1):
         #集団中の個体をランダムな順列に並べる
         order = setRondomOrder()
-
-        if count_ == 1:
-            # 現行の集団中の個体全てのエッジ情報をgenomClassに保存
-            for i in range(MAX_GENOM_LIST):
-                EdgeSet, total_cost = createEdgeSet(current_generation_individual_group[i].getGenom())
-                current_generation_individual_group[i].setEdge(EdgeSet)
-                current_generation_individual_group[i].setEvaluation(penaltyFunction(EdgeSet, option=1))
 
         for i in range(MAX_GENOM_LIST):
             # 集団中の全ての個体が丁度一度ずつ親P_Aとして選択される
@@ -783,45 +888,46 @@ if __name__ == '__main__':
                 P_A = current_generation_individual_group[order[i]]
                 P_B = current_generation_individual_group[order[0]]
 
-
-            # 子解を代入するリスト
-            c = []
-            c_cost = []
-            Eval = []
+            c = [] # 子解を代入するリスト
+            c_cost = [] # 子の移動距離を代入するリスト
+            c_eval = [] # 子のペナルティ関数値を代入するリスト
             """
             交叉：EAX
             """
             # EAXのステップ1~2を処理
             ABc = preEAX(P_A, P_B)
 
-            # EAXのステップ3~5
-            for j in range(MAX_CHILDREN):
-                c.append(edgeAssemblyCrossover(P_A, P_B, ABc))
-                Eval.append(penaltyFunction(c[j], option=1))
-                c_cost.append(penaltyFunction(c[j], option=0))
+            # AB_cycleが構築できた場合，子解を生成する
+            if ABc != False:
+                # EAXのステップ3~5
+                for j in range(MAX_CHILDREN):
+                    c.append(edgeAssemblyCrossover(P_A, P_B, ABc))
+                    c_cost.append(penaltyFunction(c[j], option=0))
+                    c_eval.append(penaltyFunction(c[j], option=1))
 
+                """
+                orderCrossoverにてプログラム全体の処理確認
+                """
+                # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
+                # for j in range(MAX_CHILDREN):
+                #     c.append(orderCrossover(P_A, P_B))
+                #     a, b = createEdgeSet(c[j]) # bがコスト
+                #     Eval.append(penaltyFunction(a, option=1))
+                #     c_cost.append(b)
 
-            """
-            orderCrossoverにてプログラム全体の処理確認
-            """
-            # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
-            # for j in range(MAX_CHILDREN):
-            #     c.append(orderCrossover(P_A, P_B))
-            #     a, b = createEdgeSet(c[j]) # bがコスト
-            #     Eval.append(penaltyFunction(a, option=1))
-            #     c_cost.append(b)
+                # 現在の親ペアから生成された子の中で一番コストの低い個体が親Aよりも
+                # 環境に適合している場合，親Aのインデックスを指定して入れ替える
+                if min(c_eval) < P_A.getEvaluation():
+                    min_idx = c_eval.index(min(c_eval))
+                    current_generation_individual_group[order[i]].setGenom(c[min_idx])
+                    current_generation_individual_group[order[i]].setEvaluation(c_eval[min_idx])
+                    current_generation_individual_group[order[i]].setDistance(c_cost[min_idx])
 
-            # 現在の親ペアの子の中で一番コストの低い個体が親Aよりも
-            # 環境に適合している場合，親Aのインデックスを指定して入れ替える
-            if min(Eval) < P_A.getEvaluation():
-                min_idx = Eval.index(min(Eval))
-                current_generation_individual_group[order[i]].setGenom(c[min_idx])
-                current_generation_individual_group[order[i]].setEvaluation(Eval[min_idx])
 
         # 今世代の個体適用度を配列化する
         fits = [i.getEvaluation() for i in current_generation_individual_group]
         min_idx = fits.index(min(fits)) # 最小値を求める
-        min_ = penaltyFunction(current_generation_individual_group[order[min_idx]].getEdge(), option=0)
+        min_ = penaltyFunction(current_generation_individual_group[order[min_idx]].getGenom(), option=0)
 
         if monotonous == min_:
             mono_count += 1
@@ -837,8 +943,8 @@ if __name__ == '__main__':
         print("====第{}世代====".format(count_))
         print("最も優れた個体の総移動コスト:{}".format(min_))
 
-        graphPlot(current_generation_individual_group[min_idx].getEdge(), \
-                  isFirst=0, isLast=0, title="第" + str(count_) + "世代")
+        # graphPlot(current_generation_individual_group[min_idx].getGenom(), \
+        #           isFirst=0, isLast=0, title= str(count_) + "Generation")
 
         # 10世代以上適応度が変わらなかった場合
         if mono_count > 10:
@@ -849,6 +955,6 @@ if __name__ == '__main__':
     print("最も優れた個体:{}".format(current_generation_individual_group[min_idx].getGenom()))
     print("最も優れた個体の総移動コスト:{}".format(min_))
 
-    graphPlot(current_generation_individual_group[min_idx].getEdge(), \
-              isFirst=0, isLast=1, title="最終世代")
-    result_df.to_csv("./output/" + filename + "_result.csv", index=False)
+    result_df.to_csv("./output/MA" + filename + "_result.csv", index=False)
+    graphPlot(current_generation_individual_group[min_idx].getGenom(), \
+              isFirst=0, isLast=1, title="Last Generation")
