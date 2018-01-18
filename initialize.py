@@ -1257,38 +1257,96 @@ def isHeiro(path):
 def modification(route):
     path = routeToPath(route)
     modi_route = []
+    pena = False
+    modicount = 0
 
     r, excess = checkCapacity(path)
+    D_r, D_excess = checkDuration(path)
 
-    if r == []:
+    if r == [] and D_r == []:
         return route, "succes"
     elif excess == False:
         print("修正不可")
         return route,"error"
 
-    while(r):
-        ExIdx = random.choice(r)
-        # print("超過ルートのインデックス:{}".format(ExIdx))
-        print("実行不可能解あり")
-        prePath = copy.deepcopy(path)
 
-        for i in np.unique(path[ExIdx]):
-            # print("i:{}".format(i))
-            # print("np.unique(path[ExIdx]):{}".format(np.unique(path[ExIdx])))
-            sys.stdout.write("\r%d番目ルートの修正操作" % ExIdx)
-            sys.stdout.flush()
-            time.sleep(0.01)
-            modi_route = Neighborhoods(i, path, f_option=2, reduce_route=0)
-            path = routeToPath(modi_route)
+    while(True):
+        while(r):
+            ExIdx = random.choice(r)
+            # print("超過ルートのインデックス:{}".format(ExIdx))
+            print("実行不可能解あり")
+            prePath = copy.deepcopy(path)
 
-        if prePath == path:
-            print("修正失敗")
-            print(route)
-            return route,"error"
+            for i in np.unique(path[ExIdx]):
+                # print("i:{}".format(i))
+                # print("np.unique(path[ExIdx]):{}".format(np.unique(path[ExIdx])))
+                # sys.stdout.write("\r%d番目ルートの修正操作" % ExIdx)
+                sys.stdout.flush()
+                time.sleep(0.01)
+                modi_route = Neighborhoods(i, path, f_option=2, reduce_route=0)
 
-        r = []
+                path = routeToPath(modi_route)
+                r, excess = checkCapacity(path)
+                if(r == []):
+                    pena = True
+                    print("容量違反を抜けた")
+                    break
+            # print("ルートに対する修正操作後の評価関数値:{}".format(penaltyFunction(modi_route, option=2)))
+            if pena == True:
+                break
+            elif prePath == path:
+                print("【modification】修正失敗")
+                # print(route)
+                return route,"error"
+            # r = []
+            # r, excess = checkCapacity(path)
+
+        """
+        期間制約違反の評価
+        """
+        D_r, D_excess = checkDuration(path)
+        while(D_r != []):
+            pena = False
+
+            ExIdx = random.choice(D_r)
+            # print("超過ルートのインデックス:{}".format(ExIdx))
+            print("実行不可能解あり")
+            prePath = copy.deepcopy(path)
+
+            for i in np.unique(path[ExIdx]):
+                # print("i:{}".format(i))
+                # print("np.unique(path[ExIdx]):{}".format(np.unique(path[ExIdx])))
+                # sys.stdout.write("\r%d番目ルートの修正操作" % ExIdx)
+                sys.stdout.flush()
+                time.sleep(0.01)
+                modi_route = Neighborhoods(i, path, f_option=2, reduce_route=0)
+
+                path = routeToPath(modi_route)
+                D_r, D_excess = checkDuration(path)
+                if(D_r == []):
+                    pena = True
+                    break
+
+            # print("ルートに対する修正操作後の評価関数値:{}".format(penaltyFunction(modi_route, option=2)))
+            if pena == True:
+                print("期間違反を抜けた")
+                break
+            elif prePath == path:
+                print("【modification】修正失敗")
+                # print(route)
+                return route,"error"
+
         r, excess = checkCapacity(path)
-    print(modi_route)
+        D_r, D_excess = checkDuration(path)
+        print(r)
+        print(D_r)
+
+        if(r == [] and D_r == []):
+            break
+        modicount += 1
+        if modicount == 10:
+            return route, "error"
+    # print(modi_route)
     return modi_route,"success"
 
 """
@@ -1311,14 +1369,38 @@ def checkCapacity(path):
             r.append(i)
         r_demands = 0
         demand = 0
-    print(r)
-    print(excess)
+    # print("容量違反インデックス:{}".format(r))
+    # print("各容量違反:{}".format(excess))
     # ルート内の需要オーバーの合計が0を超えていたら
     if(sum(excess) > 0):
         return r, False
     else:
         return r, excess
 
+
+def checkDuration(path):
+    D_excess = []
+    D_r = []
+    r_duration = 0
+
+    for i, heiro in enumerate(path):
+        """
+        route duration制約違反の計算
+        """
+        for e in heiro:
+            r_duration += cost[int(e[0])][int(e[1])]
+
+        duration = r_duration - D
+        D_excess.append(int(duration))
+        if duration > 0:
+            D_r.append(i)
+        r_duration = 0
+        duration = 0
+    print("期間違反インデックス:{}".format(D_r))
+    # print("各期間違反:{}".format(D_excess))
+    # ルート内の需要オーバーの合計が0を超えていたら
+
+    return D_r, D_excess
 """
 グラフをプロットする
 """
@@ -1354,7 +1436,7 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
     G.add_nodes_from(N)
     G.add_edges_from(E)
-    nx.draw_networkx_nodes(G, pos, node_size=80, node_color="r")
+    nx.draw_networkx_nodes(G, pos, node_size=20, node_color="r")
     nx.draw_networkx_edges(G, pos, width=1)
     # nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
     nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
@@ -1399,28 +1481,30 @@ if __name__ == "__main__":
     Dura = [float("inf"), float("inf"), float("inf"), float("inf"), float("inf"), \
             200, 160, 230, 200, 200, float("inf"), float("inf"), 720, 1040]
 
+    need_D = [6, 7, 8, 9, 10, 13, 14]
+
     for i in range(1, 15):
         filename = "vrpnc" + str(i)
+        CAPACITY = Capa[i-1]
+        D = Dura[i-1]
+        if i not in need_D:
+            continue
 
         df = createDataFrame("./csv/Christ/", filename)
         num_shelter = len(df.index)
         # num_shelter = 11
         print("顧客数:{}".format(num_shelter-1))
+        print("対象ファイル名:{}".format(filename))
+        print("トラック容量:{}".format(CAPACITY))
+        print("ルート長制約:{}".format(D))
 
         # 各避難所間の移動コスト行列を生成する
         # 2次元配列costで保持
         cost = createCostMatrix(num_shelter)
 
-        CAPACITY = Capa[i-1]
-        D = Dura[i-1]
-
-        print("対象ファイル名:{}".format(filename))
-        print("トラック容量:{}".format(CAPACITY))
-        print("ルート長制約:{}".format(D))
-
         paramArray = []
         param = 0
-        f = open("./output/param/1_ini_" + filename + ".csv", "w")
+        f = open("./output/param2/1_ini_" + filename + ".csv", "w")
         writer = csv.writer(f, lineterminator="\n")
         paramList = ["α", "値", "実行", "ルート数", "距離"]
         paramArray.append(paramList)

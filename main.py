@@ -36,7 +36,7 @@ MAX_CHILDREN = 10
 # 繰り返す世代数
 MAX_GENERATION = 100
 # 使用できる車両数
-m = 6
+m = 5
 # 車両の最大積載量
 CAPACITY = 160
 # セービング値の効果をコントロールする係数
@@ -44,7 +44,7 @@ LAMBDA = 1
 # N_near()関数で，どこまで近くのノードに局所探索するか
 NEAR = 10
 # penaltyFunction()で，容量制約違反に課すペナルティの係数
-ALPHA = 1
+ALPHA = 0.3
 # penaltyFunction()で，経路長違反に課すペナルティの係数
 BETA = 1.0
 # penaltyFunction()で，経路長違反とする距離
@@ -314,7 +314,7 @@ def routeToPath(route):
         while(not(find_flag)):
             # v_eを含むエッジをroute内から探しeにセット
             if (v_e not in np.unique(route)):
-                print("見つからない")
+                print("【routeToPath】見つからない")
                 return False
             e = random.choice(list(filter(lambda x: int(v_e) in x, route)))
             R.append(e)
@@ -384,7 +384,7 @@ def penaltyFunction(route, option):
         return round(F, 2)
 
     for edges in path:
-
+        # 一つの巡回路について
         """
         容量制約違反の計算
         """
@@ -418,7 +418,8 @@ def penaltyFunction(route, option):
     # print("F:{}, F_c:{}, F_d:{}".format(F, F_c, F_d))
     if option == 1:
         return round(F_p, 2) # ペナルティ間数値
-    else:
+    elif option == 2:
+        # print("ペナルティ項の合計:{}".format(round(F_c + F_d, 2)))
         return round(F_c + F_d, 2) # ペナルティ項のみ
 
 
@@ -474,7 +475,7 @@ def Neighborhoods(v, path, f_option, reduce_route):
 
     # 元の解のペナルティ関数評価値を保持
     P_eval = penaltyFunction(bestSet, f_option)
-    # print("デフォルト:{}".format(P_eval))
+    # print("元の評価関数値:{}".format(P_eval))
 
     # 渡されたノードvに繋がるエッジ2つ
     link_v = [i for i in EdgeSet if (v in i)]
@@ -565,7 +566,7 @@ def Neighborhoods(v, path, f_option, reduce_route):
                 # 元の解も改良解も実行可能な場合，距離の短い方を返す
                 if P_eval <= 0 and current_function <= 0:
                     if(l1 + l2 + l3 > l4 + l5 + l6):
-                        print("修正")
+                        print("【Neighborhoods】修正操作１")
                         return EdgeSet
                     else:
                         EdgeSet = copy.deepcopy(bestSet)
@@ -632,6 +633,7 @@ def Neighborhoods(v, path, f_option, reduce_route):
                 # 元の解も改良解も実行可能な場合，距離の短い方を返す
                 if P_eval <= 0 and current_function <= 0:
                     if(l1 + l2 + l3 > l4 + l5 + l6):
+                        print("【Neighborhoods】修正操作１")
                         return EdgeSet
                     else:
                         EdgeSet = copy.deepcopy(bestSet)
@@ -1255,6 +1257,7 @@ def Neighborhoods(v, path, f_option, reduce_route):
 def modification(route):
     path = routeToPath(route)
     modi_route = []
+    pena = False
 
     r, excess = checkCapacity(path)
 
@@ -1273,23 +1276,55 @@ def modification(route):
         for i in np.unique(path[ExIdx]):
             # print("i:{}".format(i))
             # print("np.unique(path[ExIdx]):{}".format(np.unique(path[ExIdx])))
-            sys.stdout.write("\r%d番目ルートの修正操作" % ExIdx)
+            # sys.stdout.write("\r%d番目ルートの修正操作" % ExIdx)
             sys.stdout.flush()
             time.sleep(0.01)
             modi_route = Neighborhoods(i, path, f_option=2, reduce_route=0)
+            if(penaltyFunction(modi_route, option=2) <= 0):
+                pena = True
+                break
             path = routeToPath(modi_route)
-
-        if prePath == path:
-            print("修正失敗")
-            print(route)
+        # print("ルートに対する修正操作後の評価関数値:{}".format(penaltyFunction(modi_route, option=2)))
+        if pena == True:
+            break
+        elif prePath == path:
+            print("【modification】修正失敗")
+            # print(route)
             return route,"error"
 
         r = []
         r, excess = checkCapacity(path)
-    print(modi_route)
+    # print(modi_route)
     return modi_route,"success"
 
+"""
+modification()中に用いる
+入力された3次元リストを元に，トラックの容量超過をしているルートの
+インデックスとルート毎の総需要量のリストを返す
+"""
+def checkCapacity(path):
+    excess = []
+    excess_0 = []
+    r = []
+    r_demands = 0
 
+    for i, heiro in enumerate(path):
+        for n in np.unique(heiro):
+            r_demands += df.ix[n].d
+        demand = r_demands - CAPACITY\
+         # if r_demands > CAPACITY else 0
+        excess.append(demand)
+        if(demand > 0):
+            r.append(i)
+        r_demands = 0
+        demand = 0
+    # print("超過ルートインデックス:{}".format(r))
+    # print(excess)
+    # ルート内の需要オーバーの合計が0を超えていたら
+    if(sum(excess) > 0):
+        return r, False
+    else:
+        return r, excess
 
 """
 集団中の個体をランダムな順序に並べるための個体番号順列を生成する
@@ -1410,7 +1445,7 @@ def preEAX(P_A, P_B):
     elif len(G_AB) % 2 == 1:
         print("G_AB内のエッジ数が奇数")
         return False
-    graphPlot(G_AB, isFirst=1, isLast=0, title="G_AB")
+    # graphPlot(G_AB, isFirst=1, isLast=0, title="G_AB")
 
     """
     ステップ2: G_AB上でAB-cycleを構築する
@@ -1478,7 +1513,7 @@ def edgeAssemblyCrossover(P_A, P_B, ABc):
     """
     E_set = random.choice(ABc) # Single戦略
     # print("E-set:{}".format(E_set))
-    graphPlot(E_set, isFirst=1, isLast=0, title="E-set")
+    # graphPlot(E_set, isFirst=1, isLast=0, title="E-set")
 
     """
     ステップ4:E-setを用いて中間個体を生成する
@@ -1502,7 +1537,7 @@ def edgeAssemblyCrossover(P_A, P_B, ABc):
         child = EAXstep5(intermediate, subtour)
     else:
         child = intermediate
-    graphPlot(child, isFirst=0, isLast=1, title="child")
+    # graphPlot(child, isFirst=0, isLast=1, title="child")
     return child
 
 """
@@ -1572,34 +1607,6 @@ def EAXstep5(intermediate, subtourIndex):
 
     return intermediate
 
-
-"""
-modification()中に用いる
-入力された3次元リストを元に，トラックの容量超過をしているルートの
-インデックスとルート毎の総需要量のリストを返す
-"""
-def checkCapacity(path):
-    excess = []
-    r = []
-    r_demands = 0
-
-    for i, heiro in enumerate(path):
-        for n in np.unique(heiro):
-            r_demands += df.ix[n].d
-        demand = r_demands - CAPACITY\
-         # if r_demands > CAPACITY else 0
-        excess.append(demand)
-        if(demand > 0):
-            r.append(i)
-        r_demands = 0
-        demand = 0
-    print(r)
-    print(excess)
-    # ルート内の需要オーバーの合計が0を超えていたら
-    if(sum(excess) > 0):
-        return r, False
-    else:
-        return r, excess
 
 
 def plotDepot(title):
@@ -1715,6 +1722,15 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
 if __name__ == '__main__':
     filename = "vrpnc1"
+    print("ファイル名:{}.csv".format(filename))
+    print("繰り返す世代数:{}世代".format(MAX_GENERATION))
+    print("集団数:{}個".format(MAX_GENOM_LIST))
+    print("生成する子数:{}個".format(MAX_CHILDREN))
+    print("トラック台数:{}台".format(m))
+    print("トラック容量:{}".format(CAPACITY))
+    print("期間制約:{}".format(D))
+    print("α:{}".format(ALPHA))
+    print("β:{}".format(BETA))
     # 避難所情報のデータフレームを生成する
     # 引数[0]:ファイルパス，[1]:ファイル名
     df = createDataFrame("./csv/Christ/", filename)
@@ -1822,10 +1838,10 @@ if __name__ == '__main__':
             """
             交叉：EAX
             """
-            print("P_A:{}".format(P_A.getGenom()))
-            print("P_B:{}".format(P_B.getGenom()))
-            graphPlot(P_A.getGenom(), isFirst=1, isLast=0, title="P_A")
-            graphPlot(P_B.getGenom(), isFirst=1, isLast=0, title="P_B")
+            # print("P_A:{}".format(P_A.getGenom()))
+            # print("P_B:{}".format(P_B.getGenom()))
+            # graphPlot(P_A.getGenom(), isFirst=1, isLast=0, title="P_A")
+            # graphPlot(P_B.getGenom(), isFirst=1, isLast=0, title="P_B")
             # EAXのステップ1~2を処理
             ABc = preEAX(P_A, P_B)
 
@@ -1838,19 +1854,26 @@ if __name__ == '__main__':
                     random.shuffle(random_order)
 
                     child = edgeAssemblyCrossover(P_A, P_B, ABc)
-                    path = routeToPath(child)
-                    sys.exit()
-                    # """
-                    # EAX後の局所探索
-                    # """
+                    # path = routeToPath(child)
+
+                    """
+                    EAX後の局所探索
+                    f_option:
+                        0→距離のみの評価
+                        1→ペナルティ関数による評価
+                        2→ペナルティ項が0以下になるように
+                    """
                     # for n, k in enumerate(random_order):
                     #     prePath = copy.deepcopy(path)
-                    #     local_route = Neighborhoods(k, path, f_option=1, reduce_route=0)
+                    #     local_route = Neighborhoods(k, path, f_option=2, reduce_route=0)
                     #     path = routeToPath(local_route)
                     #     if path == False:
                     #         path = copy.deepcopy(prePath)
+                    route,result = modification(child) #修正に失敗していたらresultにFalse
 
-                    c.append(pathToRoute(path))
+
+                    # c.append(pathToRoute(path))
+                    c.append(route)
                     c_cost.append(penaltyFunction(c[j], option=0))
                     c_eval.append(penaltyFunction(c[j], option=1))
 
@@ -1870,13 +1893,14 @@ if __name__ == '__main__':
                     min_idx = c_cost.index(min(c_cost))
                     # print("min:{}".format(min(c_eval)))
                     # print("min_idx:{}".format(min_idx))
+                    print("子の中で最小のコスト:{}".format(c_cost[min_idx]))
                     current_generation_individual_group[order[i]].setGenom(c[min_idx])
                     current_generation_individual_group[order[i]].setEvaluation(c_eval[min_idx])
                     current_generation_individual_group[order[i]].setDistance(c_cost[min_idx])
 
 
         # 今世代の個体適用度を配列化する
-        fits = [i.getEvaluation() for i in current_generation_individual_group]
+        fits = [i.getDistance() for i in current_generation_individual_group]
         min_idx = fits.index(min(fits)) # 最小値を求める
         min_ = penaltyFunction(current_generation_individual_group[order[int(min_idx)]].getGenom(), option=0)
 
