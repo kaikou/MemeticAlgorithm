@@ -1374,6 +1374,7 @@ def graphPlot(edgeList, isFirst, isLast, title):
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
         print("ルート数:{}".format(len(routeToPath(edgeList))))
         plt.title(title)
+        plt.savefig("./output/param/ini_" + filename +".png")  # save as png
         plt.pause(0.01)
         plt.figure()
 
@@ -1388,7 +1389,7 @@ def graphPlot(edgeList, isFirst, isLast, title):
         print("最終経路:{}".format(penaltyFunction(edgeList, 0)))
         print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
         print("ルート数:{}".format(len(routeToPath(edgeList))))
-        plt.savefig("./output/" + filename +".png")  # save as png
+        plt.savefig("./output/param/ini_" + filename +".png")  # save as png
         plt.show()
         return(0)
 
@@ -1419,7 +1420,7 @@ if __name__ == "__main__":
 
         paramArray = []
         param = 0
-        f = open("./output/test/1_ini_" + filename + ".csv", "w")
+        f = open("./output/param/1_ini_" + filename + ".csv", "w")
         writer = csv.writer(f, lineterminator="\n")
         paramList = ["α", "値", "実行", "ルート数", "距離"]
         paramArray.append(paramList)
@@ -1440,7 +1441,7 @@ if __name__ == "__main__":
             # セービング方で得られた解にデポをつける
             path = createEdgeSet(route)
             print("ルート数(セービング法)：{}".format(len(path)))
-            graphPlot(pathToRoute(path), isFirst=1, isLast=0, title="Saving Route")
+            # graphPlot(pathToRoute(path), isFirst=1, isLast=0, title="Saving Route")
 
             random_order = [i for i in range(1, num_shelter)]
             random.shuffle(random_order)
@@ -1470,7 +1471,7 @@ if __name__ == "__main__":
                 # checkCapacity(routeToPath(route))
             else:
                 result = "success"
-            graphPlot(route, isFirst=0, isLast=0, title="modification")
+            # graphPlot(route, isFirst=0, isLast=0, title="modification")
             route_num = len(routeToPath(route))
             distance = penaltyFunction(route, 0)
             print("")
@@ -1489,11 +1490,10 @@ if __name__ == "__main__":
                 break
         elapsed_time = time.time() - start
         print("計算時間：" + str(elapsed_time) + "[sec]")
-        sys.exit()
         writer.writerows(paramArray)
         writer.writerow(bestRoute)
         writer.writerow(["計算時間：", elapsed_time])
         writer.writerow(["修正時間：", m_time])
         writer.writerow(["トラック容量：", CAPACITY, "期間制約", D])
         f.close()
-        # graphPlot(route, isFirst=0, isLast=1, title="modification")
+        graphPlot(route, isFirst=1, isLast=0, title="modification")
