@@ -44,7 +44,7 @@ ALPHA = 1
 BETA = 1.0
 # penaltyFunction()で，経路長違反とする距離
 D = float("inf")
-
+SERVICE = 0
 
 """
 避難所情報のデータフレームを生成する
@@ -256,6 +256,7 @@ def penaltyFunction(route, option):
     F_d = 0
     R_demands = 0
     R_cost = 0
+    service = -1*SERVICE
     path = routeToPath(route)
 
     # ルート総距離
@@ -273,6 +274,7 @@ def penaltyFunction(route, option):
         nodes = np.unique(edges)
         for n in nodes: # 各ルートの合計需要
             R_demands += df.ix[n].d
+            service += SERVICE
 
         if R_demands > CAPACITY:
             F_c += R_demands - CAPACITY # ルート内の需要超過
@@ -286,12 +288,14 @@ def penaltyFunction(route, option):
         """
         for e in edges:
             R_cost += cost[int(e[0])][int(e[1])]
+        R_cost += service
         if R_cost > D:
             F_d += R_cost - D
         else:
             F_d += 0
             # F_d += abs(R_cost - D)
         R_cost = 0
+        service = -1*SERVICE
 
     # ペナルティ関数
 
@@ -1264,7 +1268,7 @@ def modification(route):
     D_r, D_excess = checkDuration(path)
 
     if r == [] and D_r == []:
-        return route, "succes"
+        return route, "success"
     elif excess == False:
         print("修正不可")
         return route,"error"
@@ -1482,11 +1486,14 @@ if __name__ == "__main__":
             200, 160, 230, 200, 200, float("inf"), float("inf"), 720, 1040]
 
     need_D = [6, 7, 8, 9, 10, 13, 14]
+    min_m = [5, 10, 8, 12, 16, 6, 11, 9, 14, 18, 7, 10, 11, 11]
+    sTime = [0, 0, 0, 0, 0, 10, 10, 10, 10, 10, 0, 0, 50, 90]
 
     for i in range(1, 15):
         filename = "vrpnc" + str(i)
         CAPACITY = Capa[i-1]
         D = Dura[i-1]
+        SERVICE = sTime[i-1]
         if i not in need_D:
             continue
 
@@ -1497,6 +1504,7 @@ if __name__ == "__main__":
         print("対象ファイル名:{}".format(filename))
         print("トラック容量:{}".format(CAPACITY))
         print("ルート長制約:{}".format(D))
+        print("サービス時間:{}".format(SERVICE))
 
         # 各避難所間の移動コスト行列を生成する
         # 2次元配列costで保持
@@ -1527,13 +1535,13 @@ if __name__ == "__main__":
             print("ルート数(セービング法)：{}".format(len(path)))
             # graphPlot(pathToRoute(path), isFirst=1, isLast=0, title="Saving Route")
 
-            random_order = [i for i in range(1, num_shelter)]
+            random_order = [j for j in range(1, num_shelter)]
             random.shuffle(random_order)
 
 
-            for n, i in enumerate(random_order):
+            for n, k in enumerate(random_order):
                 prePath = copy.deepcopy(path)
-                local_route = Neighborhoods(i, path, f_option=1, reduce_route=1)
+                local_route = Neighborhoods(k, path, f_option=1, reduce_route=1)
                 path = routeToPath(local_route)
                 if path == False:
                     path = copy.deepcopy(prePath)
@@ -1556,17 +1564,23 @@ if __name__ == "__main__":
             else:
                 result = "success"
             # graphPlot(route, isFirst=0, isLast=0, title="modification")
-            route_num = len(routeToPath(route))
+            path = routeToPath(route)
+            route_num = len(path)
             distance = penaltyFunction(route, 0)
             print("")
             print("ルート数(修正後)：{}".format(route_num))
             print("総距離:{}".format(distance))
-            if(distance < bestDistance):
+            if(distance < bestDistance and result == "success"):
                 bestRoute = copy.deepcopy(route)
+                bestDistance = distance
 
             paramList = [param, ALPHA, result, route_num, distance]
             paramArray.append(paramList)
             paramList = []
+            if(result == "success" and min_m[i-1] > route_num):
+                print(checkCapacity(path))
+                print(checkDuration(path))
+                print("ペナルティ項" + str(penaltyFunction(route, 2)))
 
 
             param += 1
@@ -1576,8 +1590,10 @@ if __name__ == "__main__":
         print("計算時間：" + str(elapsed_time) + "[sec]")
         writer.writerows(paramArray)
         writer.writerow(bestRoute)
+        writer.writerow(["最短コスト:", bestDistance])
         writer.writerow(["計算時間：", elapsed_time])
         writer.writerow(["修正時間：", m_time])
         writer.writerow(["トラック容量：", CAPACITY, "期間制約", D])
+        writer.writerow(["サービス時間：", SERVICE])
         f.close()
         graphPlot(route, isFirst=1, isLast=0, title="modification")
