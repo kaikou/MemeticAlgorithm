@@ -59,7 +59,7 @@ def graphPlot(edgeList, depot, title):
     N = []
     G = nx.Graph()
     pos = {}  #ノードの位置情報格納
-
+    
     if depot == 0:
         # ノード番号とノードの座標を格納
         for i in range(num_shelter):
@@ -87,7 +87,6 @@ def graphPlot(edgeList, depot, title):
         # nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6) # デフォルト8
 
-        plt.legend()
         plt.xlabel("x-coordinate")
         plt.ylabel("y-coordinate")
         # plt.xlim(0, 70)
@@ -118,7 +117,7 @@ def graphPlot(edgeList, depot, title):
 
         G.add_nodes_from(N)
         # G.add_edges_from(E)
-        nx.draw_networkx_nodes(G, pos, node_size=30, node_color="b")
+        nx.draw_networkx_nodes(G, pos, node_size=40, node_color="b")
         nx.draw_networkx_edges(G, pos, width=1)
         # nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=80) # デフォルト200
         # nx.draw_networkx_labels(G, pos, labels=labels, font_size=6) # デフォルト12
@@ -134,16 +133,16 @@ def graphPlot(edgeList, depot, title):
         plt.clf()
 
 if __name__ == "__main__":
-    name = "kelly"
+    name = "vrpnc"
     # name = ["75a", "75b", "75c", "75d", "100a", "100b", "100c", "100d", "150a", "150b", "150c", "150d", "385"]
-    filename = []
-    for i in range(1, 21):
-        filename.append(name + str(i))
+    filename = ""
+    for i in range(1, 15):
+        filename = name + str(i)
         # filename.append("tai" + i)
-    print(filename)
+        print(filename)
 
-    for i in filename:
-        df = createDataFrame("./csv/kelly/", i)
+    # for i in filename:
+        df = createDataFrame("./csv/Christ/", filename)
         num_shelter = len(df.index)
         # num_shelter = 11
         print("顧客数:{}".format(num_shelter-1))
@@ -151,5 +150,5 @@ if __name__ == "__main__":
         # 各避難所間の移動コスト行列を生成する
         # 2次元配列costで保持
         cost = createCostMatrix(num_shelter)
-        graphPlot("", 0, str(i))
-        graphPlot("", 1, str(i))
+        graphPlot("", 0, "Problem" + str(i))
+        graphPlot("", 1, "Problem" + str(i))
