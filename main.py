@@ -288,21 +288,43 @@ def savingRoute(route):
 """
 def routeSplit(path):
     routeLength = []
-    s_option = 0
+    routeCost = []
+    routeCapa = []
+    s_option = 3
+    # 0: ランダム
+    # 1: エッジ数
+    # 2: 距離
+    # 3: 需要量
     # print("パス:{}".format(path))
     while(True):
         for route in path:
-            routeLength.append(len(route))
-        # print("routeLength:{}".format(routeLength))
+            r_cost = 0
+            r_demand = 0
+            routeLength.append(len(route)) # ルート毎の顧客数リスト
+            for n in np.unique(route):
+                r_demand += df.ix[n].d
+            for e in route:
+                r_cost += cost[int(e[0])][int(e[1])]
+            routeCapa.append(r_demand) # ルート毎の需要量
+            routeCost.append(round(r_cost, 2)) # ルート毎の距離リスト
 
-        # 顧客数の多いルートを分割
+        # print("routeLength:{}".format(routeLength))
+        # print("routeCapa:{}".format(routeCapa))
+        # print("routeCost:{}".format(routeCost))
+
+        # エッジ数4以上のところからランダムに選ぶ
         if s_option == 0:
-            # 顧客数が一番多いルートインデックスを取得
-            IdxList = [i for i, x in enumerate(routeLength) if x == max(routeLength)]
-        # 顧客数3以上のところからランダムに選ぶ
-        elif s_option == 1:
-            IdxList = [i for i, x in enumerate(routeLength) if x >= 3]
+            IdxList = [i for i, x in enumerate(routeLength) if x >= 4]
             print(IdxList)
+        # エッジ数の多いルートを選ぶ
+        elif s_option == 1:
+            IdxList = [i for i, x in enumerate(routeLength) if x == max(routeLength)]
+        # ルート内の距離が一番長いルートを選ぶ
+        elif s_option == 2:
+            IdxList = [i for i, x in enumerate(routeCost) if x == max(routeCost)]
+        # ルート内の需要が一番多いルートを選ぶ
+        elif s_option == 3:
+            IdxList = [i for i, x in enumerate(routeCapa) if x == max(routeCapa)]
 
         maxIdx = random.choice(IdxList)
         # print("maxIdx:{}".format(maxIdx))
@@ -347,13 +369,15 @@ def routeSplit(path):
 @OUTPUT:
     Path: ルート情報を含むエッジの3次元リスト
 """
-def routeToPath(route):
-    route.sort(key=lambda x:x[1])
-    route.sort(key=lambda x:x[0])
+def routeToPath(pre_route):
 
-    route = sorted(route)
+    for n in pre_route:
+        if n[1] == 0:
+            n[0], n[1] = n[1], n[0]
 
-    # print("イミフ:{}".format(route))
+    route = sorted(pre_route)
+    # route = sorted(route)
+
     Path = []
     R = []
     v_e_1 = 0
@@ -1918,7 +1942,6 @@ if __name__ == '__main__':
         print("分割後ルート数:{}".format(len(path)))
         route = pathToRoute(path) # ２次元解
         # graphPlot(route, isFirst=1, isLast=0, title="Split Route")
-        print("ここにある１:{}".format(route))
 
 
         # 局所探索用のランダムな並びを生成
@@ -1956,7 +1979,7 @@ if __name__ == '__main__':
         if len(path) != m:
             print("ルート数が異なる")
             continue
-
+        # print("ここまである:{}".format(len(route)))
         ditance = penaltyFunction(route, option=0)
         evaluation = penaltyFunction(route, option=1)
         # print(distance)

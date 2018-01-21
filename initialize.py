@@ -31,7 +31,7 @@ MAX_CHILDREN = 10
 # 繰り返す世代数
 MAX_GENERATION = 30
 # 使用できる車両数
-VEHICLE = 3
+m = 3
 # 車両の最大積載量
 CAPACITY = 160
 # セービング値の効果をコントロールする係数
@@ -307,6 +307,93 @@ def penaltyFunction(route, option):
     else:
         return round(F_c + F_d, 2) # ペナルティ項のみ
 
+
+
+"""
+経路を分割することでルート数を増やす関数
+セービング法によって生成された初期解のうち，
+もっとも顧客数の多いルートを選び真ん中で分割する
+@INPUT:
+    path
+    (m): 固定したいルート数
+@OUTPUT:
+    path
+"""
+def routeSplit(path):
+    routeLength = []
+    routeCost = []
+    routeCapa = []
+    s_option = 1
+    # 0: ランダム
+    # 1: エッジ数
+    # 2: 距離
+    # 3: 需要量
+    # print("パス:{}".format(path))
+    while(True):
+        for route in path:
+            r_cost = 0
+            r_demand = 0
+            routeLength.append(len(route)) # ルート毎の顧客数リスト
+            for n in np.unique(route):
+                r_demand += df.ix[n].d
+            for e in route:
+                r_cost += cost[int(e[0])][int(e[1])]
+            routeCapa.append(r_demand) # ルート毎の需要量
+            routeCost.append(round(r_cost, 2)) # ルート毎の距離リスト
+
+        # print("routeLength:{}".format(routeLength))
+        # print("routeCapa:{}".format(routeCapa))
+        # print("routeCost:{}".format(routeCost))
+
+        # エッジ数4以上のところからランダムに選ぶ
+        if s_option == 0:
+            IdxList = [i for i, x in enumerate(routeLength) if x >= 4]
+            print(IdxList)
+        # エッジ数の多いルートを選ぶ
+        elif s_option == 1:
+            IdxList = [i for i, x in enumerate(routeLength) if x == max(routeLength)]
+        # ルート内の距離が一番長いルートを選ぶ
+        elif s_option == 2:
+            IdxList = [i for i, x in enumerate(routeCost) if x == max(routeCost)]
+        # ルート内の需要が一番多いルートを選ぶ
+        elif s_option == 3:
+            IdxList = [i for i, x in enumerate(routeCapa) if x == max(routeCapa)]
+
+        maxIdx = random.choice(IdxList)
+        # print("maxIdx:{}".format(maxIdx))
+        # print("それぞれの顧客数:{}".format(routeLength))
+
+        # 分割するルート
+        split = path[maxIdx]
+        # 分割するルートを除いたパス
+        path.pop(maxIdx)
+        # print("split:{}".format(split))
+        # print("残ったパス:{}".format(path))
+        # 分割するインデックス
+        Idx = math.floor(len(split)/2 - 1)
+        # print("Idx:{}".format(Idx))
+
+        #分岐点となるノードを決定する
+        pointA = split[Idx][1] if split[Idx][1] in split[Idx] and split[Idx][1] in split[Idx+1] \
+        else split[Idx][0]
+        pointB = split[Idx+1][1] if split[Idx+1][0] == pointA else split[Idx+1][0]
+
+        routeA = split[:Idx+1] + [[pointA, 0]]
+        routeB = [[0, pointB]] + split[Idx+2:]
+
+        # print("routeA:{}".format(routeA))
+        # print("routeB:{}".format(routeB))
+
+        path.append(routeA)
+        path.append(routeB)
+
+        # print("分割後パス:{}".format(path))
+
+        routeLength = []
+
+        if len(path) >= m:
+            break
+    return path
 
 """
 あるノードから近いノード集合を返す
@@ -1484,8 +1571,10 @@ if __name__ == "__main__":
     Capa = [160, 140, 200, 200, 200, 160, 140, 200, 200, 200, 200, 200, 200, 200]
     Dura = [float("inf"), float("inf"), float("inf"), float("inf"), float("inf"), \
             200, 160, 230, 200, 200, float("inf"), float("inf"), 720, 1040]
+    Vehicle = [5, 10, 8, 12, 16, 6, 11, 9, 14, 18, 7, 10, 11, 11]
 
     need_D = [6, 7, 8, 9, 10, 13, 14]
+    # need_D = [13, 14]
     min_m = [5, 10, 8, 12, 16, 6, 11, 9, 14, 18, 7, 10, 11, 11]
     sTime = [0, 0, 0, 0, 0, 10, 10, 10, 10, 10, 0, 0, 50, 90]
 
@@ -1494,6 +1583,7 @@ if __name__ == "__main__":
         CAPACITY = Capa[i-1]
         D = Dura[i-1]
         SERVICE = sTime[i-1]
+        m = Vehicle[i-1] + 1
         if i not in need_D:
             continue
 
@@ -1505,6 +1595,7 @@ if __name__ == "__main__":
         print("トラック容量:{}".format(CAPACITY))
         print("ルート長制約:{}".format(D))
         print("サービス時間:{}".format(SERVICE))
+        print("利用できるトラック台数+1:{}".format(m))
 
         # 各避難所間の移動コスト行列を生成する
         # 2次元配列costで保持
@@ -1512,7 +1603,7 @@ if __name__ == "__main__":
 
         paramArray = []
         param = 0
-        f = open("./output/param2/1_ini_" + filename + ".csv", "w")
+        f = open("./output/param3/1_ini_" + filename + ".csv", "w")
         writer = csv.writer(f, lineterminator="\n")
         paramList = ["α", "値", "実行", "ルート数", "距離"]
         paramArray.append(paramList)
@@ -1532,6 +1623,7 @@ if __name__ == "__main__":
             route = savingMethod(num_shelter, cost)
             # セービング方で得られた解にデポをつける
             path = createEdgeSet(route)
+            path = routeSplit(path)
             print("ルート数(セービング法)：{}".format(len(path)))
             # graphPlot(pathToRoute(path), isFirst=1, isLast=0, title="Saving Route")
 
@@ -1563,6 +1655,7 @@ if __name__ == "__main__":
                 # checkCapacity(routeToPath(route))
             else:
                 result = "success"
+                print(result)
             # graphPlot(route, isFirst=0, isLast=0, title="modification")
             path = routeToPath(route)
             route_num = len(path)
