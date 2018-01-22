@@ -24,11 +24,12 @@ import sys, time
 import copy
 import itertools
 import math
+import csv
 
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 100
+MAX_GENOM_LIST = 30
 # 各両親から生成される子個体の数
-MAX_CHILDREN = 30
+MAX_CHILDREN = 10
 # # 遺伝子選択数
 # SELECT_GENOM = 20
 # # 個体突然変異確率
@@ -1091,7 +1092,7 @@ def routeSplit(path):
     routeLength = []
     routeCost = []
     routeCapa = []
-    s_option = 0
+    s_option = S_OP
     # 0: ランダム
     # 1: エッジ数
     # 2: 距離
@@ -1432,7 +1433,7 @@ def N_near(node, near):
         1: 許容する
         0: 許容しない
 """
-def Neighborhoods(v, path, f_option, reduce_route):
+def Neighborhoods(v, path, f_option, reduce_route, first):
     EdgeSet = []
     # DefaultEdgeSet = []
     path_cost = 0
@@ -1570,7 +1571,8 @@ def Neighborhoods(v, path, f_option, reduce_route):
                 else:
                     P_eval = current_function
                     bestSet = copy.deepcopy(EdgeSet)
-                    return bestSet
+                    if first == 1:
+                        return bestSet
 
             flag = False
             """
@@ -1636,7 +1638,8 @@ def Neighborhoods(v, path, f_option, reduce_route):
                 else:
                     P_eval = current_function
                     bestSet = copy.deepcopy(EdgeSet)
-                    return bestSet
+                    if first == 1:
+                        return bestSet
             flag = False
 
             """
@@ -1708,7 +1711,8 @@ def Neighborhoods(v, path, f_option, reduce_route):
                 else:
                     P_eval = current_function
                     bestSet = copy.deepcopy(EdgeSet)
-                    return bestSet
+                    if first == 1:
+                        return bestSet
             flag = False
 
             """
@@ -1774,7 +1778,8 @@ def Neighborhoods(v, path, f_option, reduce_route):
                 else:
                     P_eval = current_function
                     bestSet = copy.deepcopy(EdgeSet)
-                    return bestSet
+                    if first == 1:
+                        return bestSet
             flag = False
 
             """
@@ -1888,7 +1893,8 @@ def Neighborhoods(v, path, f_option, reduce_route):
                     else:
                         P_eval = current_function
                         bestSet = copy.deepcopy(EdgeSet)
-                        return bestSet
+                        if first == 1:
+                            return bestSet
                 flag = False
 
             """
@@ -1986,7 +1992,8 @@ def Neighborhoods(v, path, f_option, reduce_route):
                     else:
                         P_eval = current_function
                         bestSet = copy.deepcopy(EdgeSet)
-                        return bestSet
+                        if first == 1:
+                            return bestSet
                 flag = False
 
 
@@ -2049,7 +2056,8 @@ def Neighborhoods(v, path, f_option, reduce_route):
                 else:
                     P_eval = current_function
                     bestSet = copy.deepcopy(EdgeSet)
-                    return bestSet
+                    if first == 1:
+                        return bestSet
             flag = False
             """
             2-opt④
@@ -2107,7 +2115,8 @@ def Neighborhoods(v, path, f_option, reduce_route):
                 else:
                     P_eval = current_function
                     bestSet = copy.deepcopy(EdgeSet)
-                    return bestSet
+                    if first == 1:
+                        return bestSet
             flag = False
 
         # # vとwが同じルートか判定
@@ -2676,9 +2685,11 @@ def plotDepot(title):
     plt.xlabel("x-coordinate")
     plt.ylabel("y-coordinate")
     plt.title(title)
-    plt.savefig(saveDirectory + filename +".png")  # save as png
-    plt.show()
-    return(0)
+    plt.savefig(saveDirectory + title +".png")  # save as png
+    plt.pause(0.01)
+    plt.clf()
+    # plt.show()
+    # return(0)
 
 """
 グラフをプロットする
@@ -2733,12 +2744,17 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
     # 元の経路
     if isFirst == 1:
-        print("最初の経路:{}".format(penaltyFunction(edgeList, 0)))
-        print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
-        print("ルート数:{}".format(len(plot_path)))
+        # print("最初の経路:{}".format(penaltyFunction(edgeList, 0)))
+        # print("ペナルティ関数値:{}".format(penaltyFunction(edgeList, 1)))
+        # print("ルート数:{}".format(len(plot_path)))
         plt.title(title)
+        plotDepot(title)
+        # plt.pause(0.01)
+        # plt.figure()
+
+
         plt.pause(0.01)
-        plt.figure()
+        plt.clf()
 
     # 連続プロット中
     if isLast == 0:
@@ -2752,232 +2768,155 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
 
 if __name__ == '__main__':
-    filename = "vrpnc1"
-    saveDirectory = "./output/propose/"
-    # 避難所情報のデータフレームを生成する
-    # 引数[0]:ファイルパス，[1]:ファイル名
-    df = createDataFrame("./csv/Christ/", filename)
-    num_shelter = len(df.index)
+    Capa = [160, 140, 200, 200, 200, 160, 140, 200, 200, 200, 200, 200, 200, 200]
+    Vehicle = [5, 10, 8, 12, 16, 6, 11, 9, 14, 18, 7, 10, 11, 11]
+    S_OP = 3
+    # 0: ランダム
+    # 1: エッジ数
+    # 2: 距離
+    # 3: 需要量
+    # 4: All
+    if S_OP == 0:
+        method = "ランダム"
+    elif S_OP == 1:
+        method = "エッジ数"
+    elif S_OP == 2:
+        method = "距離"
+    elif S_OP == 3:
+        method = "需要量"
+    elif S_OP == 4:
+        method = "All"
 
-    print("ファイル名:{}.csv".format(filename))
-    print("繰り返す世代数:{}世代".format(MAX_GENERATION))
-    print("集団数:{}個".format(MAX_GENOM_LIST))
-    print("生成する子数:{}個".format(MAX_CHILDREN))
-    print("トラック台数:{}台".format(m))
-    print("トラック容量:{}".format(CAPACITY))
-    print("期間制約:{}".format(D))
-    print("α:{}".format(ALPHA))
-    print("β:{}".format(BETA))
-    print("顧客数:{}".format(num_shelter))
-    # 避難所情報のデータフレームを生成する
-    # 引数[0]:ファイルパス，[1]:ファイル名
-    df = createDataFrame("./csv/Christ/", filename)
-    num_shelter = len(df.index)
-    # num_shelter = 11
-    result_df = pd.DataFrame(index=[], columns=['世代', 'ペナルティ関数値', '総移動コスト'])
 
-    # 各避難所間の移動コスト行列を生成する
-    # 2次元配列costで保持
-    cost = createCostMatrix(num_shelter)
-    # 第一世代の個体集団を生成
-    current_generation_individual_group = []
-    indi_count = 0
+    for No in range(1, 15):
+        filename = "vrpnc" + str(No)
+        saveDirectory = "./output/MAdemand/"
+        # 避難所情報のデータフレームを生成する
+        # 引数[0]:ファイルパス，[1]:ファイル名
+        df = createDataFrame("./csv/Christ/", filename)
+        num_shelter = len(df.index)
 
-    start = time.time()
-    m_time = 0
-    print("現行の個体集団")
-    while(True):
-        # current_generation_individual_group.append(createGenom(num_shelter, m))
-        """
-        セービング法により初期解を生成
-        """
-        sa_route, distance = savingMethod(num_shelter, cost)
-        # if len(sa_route) != m:
-        #     continue
-        path = savingRoute(sa_route) # ３次元解
-        print("セービング法のルート数:{}".format(len(path)))
-        route = pathToRoute(path) # ２次元解
-        # graphPlot(route, isFirst=1, isLast=0, title="Saving Route")
+        CAPACITY = Capa[No-1]
+        m = Vehicle[No-1] + 3
 
-        path = routeSplit(path) # ルート数をmに固定
-        print("分割後ルート数:{}".format(len(path)))
-        route = pathToRoute(path) # ２次元解
-        print(checkCapacity(path))
-        # graphPlot(route, isFirst=0, isLast=1, title="Split Route")
+        print("ファイル名:{}.csv".format(filename))
+        print("繰り返す世代数:{}世代".format(MAX_GENERATION))
+        print("集団数:{}個".format(MAX_GENOM_LIST))
+        print("生成する子数:{}個".format(MAX_CHILDREN))
+        print("トラック台数:{}台".format(m))
+        print("トラック容量:{}".format(CAPACITY))
+        # print("期間制約:{}".format(D))
+        # print("α:{}".format(ALPHA))
+        # print("β:{}".format(BETA))
+        print("顧客数:{}".format(num_shelter-1))
 
-        # 局所探索用のランダムな並びを生成
-        random_order = [i for i in range(1, num_shelter)]
-        random.shuffle(random_order)
-        # sys.exit()
-        """
-        局所探索
-        """
-        print("")
-        first改善山登り法による局所探索法によって解を改善
-        for n, i in enumerate(random_order):
-            prePath = copy.deepcopy(path)
-            local_route = Local(i, path, f_option=1, reduce_route=0)
-            path = routeToPath(local_route)
-            if path == False:
-                path = copy.deepcopy(prePath)
-            if path != prePath:
-                print("局所探索成功")
-                break
-            # graphPlot(local_route, isFirst=0, isLast=0, title="local search")
-            # sys.stdout.write("\r%d番目ノードの局所探索" % n)
-            # sys.stdout.flush()
-            # time.sleep(0.01)
+        f = open(saveDirectory + "/config/" + "Problem" + str(No) + "_config.csv", "w")
+        writer = csv.writer(f, lineterminator="\n")
+        paramArray = [["ファイル名", filename + ".csv"],
+               ["顧客数", num_shelter-1],
+               ["繰り返す世代数", MAX_GENERATION],
+               ["集団数", MAX_GENOM_LIST],
+               ["生成子数", MAX_CHILDREN],
+               ["トラック台数(m+3)", m],
+               ["トラック容量", CAPACITY],
+               ["ルート分割方法", method]]
 
-        # route = pathToRoute(path)
+        writer.writerows(paramArray)
+        paramArray = []
 
-        """
-        修正操作
-        """
-        # if(penaltyFunction(route, 2) > 0):
-        #     m_start = time.time()
-        #     route,result = modification(route) #修正に失敗していたらresultにFalse
-        #     m_time += time.time() - m_start
-        #     if result == False:
-        #         continue
+        result_df = pd.DataFrame(index=[], columns=['世代', 'ペナルティ関数値', '総移動コスト'])
 
-        if len(path) != m:
-            print("ルート数が異なる")
-            continue
-        # print("ここまである:{}".format(len(route)))
-        ditance = penaltyFunction(route, option=0)
-        evaluation = penaltyFunction(route, option=1)
-        # sys.exit()
-        # print(distance)
-        # GAクラスに解，評価値，距離を保存
-        current_generation_individual_group.append(ga.genom(route, evaluation, distance))
+        # 各避難所間の移動コスト行列を生成する
+        # 2次元配列costで保持
+        cost = createCostMatrix(num_shelter)
+        # 第一世代の個体集団を生成
+        current_generation_individual_group = []
+        indi_count = 0
 
-        print("個体【{}】:{}".format(indi_count, current_generation_individual_group[indi_count].getGenom()))
-        print("評価{}".format(current_generation_individual_group[indi_count].getEvaluation()))
-        print("距離{}".format(current_generation_individual_group[indi_count].getDistance()))
-        print("-----------------------------------------------------------------")
-        indi_count += 1
-        sys.stdout.write("\r%d個初期解生成" % indi_count)
-        sys.stdout.flush()
-        time.sleep(0.01)
-        if indi_count == MAX_GENOM_LIST:
+        start = time.time()
+        m_time = 0
+        print("現行の個体集団")
+        while(True):
+            # current_generation_individual_group.append(createGenom(num_shelter, m))
+            """
+            セービング法により初期解を生成
+            """
+            sa_route, distance = savingMethod(num_shelter, cost)
+            # if len(sa_route) != m:
+            #     continue
+            path = savingRoute(sa_route) # ３次元解
+            print("セービング法のルート数:{}".format(len(path)))
+            route = pathToRoute(path) # ２次元解
+            # graphPlot(route, isFirst=1, isLast=0, title="Saving Route")
+
+            path = routeSplit(path) # ルート数をmに固定
+            print("分割後ルート数:{}".format(len(path)))
+            route = pathToRoute(path) # ２次元解
+            print(checkCapacity(path))
+            # graphPlot(route, isFirst=0, isLast=1, title="Split Route")
+
+            # 局所探索用のランダムな並びを生成
+            random_order = [i for i in range(1, num_shelter)]
+            random.shuffle(random_order)
+            # sys.exit()
+            """
+            局所探索
+            """
             print("")
-            break
+            # first改善山登り法による局所探索法によって解を改善
+            for n, i in enumerate(random_order):
+                prePath = copy.deepcopy(path)
+                local_route = Local(i, path, f_option=1, reduce_route=0)
+                path = routeToPath(local_route)
+                if path == False:
+                    path = copy.deepcopy(prePath)
+                if path != prePath:
+                    print("局所探索成功")
+                    break
+                # graphPlot(local_route, isFirst=0, isLast=0, title="local search")
+                # sys.stdout.write("\r%d番目ノードの局所探索" % n)
+                # sys.stdout.flush()
+                # time.sleep(0.01)
 
-    # graphPlot(current_generation_individual_group[0].getGenom(), isFirst=0, isLast=0, title="1st generation")
-    monotonous = current_generation_individual_group[0].getDistance()
-    mono_count = 0
+            # route = pathToRoute(path)
 
-
-    # 今世代の個体適用度を配列化する
-    fits = [f.getEvaluation() for f in current_generation_individual_group]
-    # print("fits:{}".format(fits))
-    min_idx = fits.index(min(fits)) # 最小値を求める
-    # print("min_idx:{}".format(min_idx))
-    min_ = current_generation_individual_group[int(min_idx)].getDistance()
-    min_Eval = current_generation_individual_group[int(min_idx)].getEvaluation()
-    print("====第{}世代====".format(int(1)))
-    print("最も優れた個体の評価値:{}".format(min_Eval))
-    series = pd.Series([int(1), min_Eval, min_], index=result_df.columns)
-    result_df = result_df.append(series, ignore_index = True)
-
-    """
-    ここまで第一世代
-    この先繰り返し
-    """
-    for count_ in range(2, MAX_GENERATION + 1):
-        #集団中の個体をランダムな順列に並べる
-        order = setRondomOrder()
-
-        for i in range(MAX_GENOM_LIST):
-            # 集団中の全ての個体が丁度一度ずつ親P_Aとして選択される
-            if i < MAX_GENOM_LIST -1:
-                P_A = current_generation_individual_group[order[i]]
-                P_B = current_generation_individual_group[order[i+1]]
-            else:
-                P_A = current_generation_individual_group[order[i]]
-                P_B = current_generation_individual_group[order[0]]
-
-            c = [] # 子解を代入するリスト
-            c_cost = [] # 子の移動距離を代入するリスト
-            c_eval = [] # 子のペナルティ関数値を代入するリスト
             """
-            交叉：EAX
+            修正操作
             """
-            # print("P_A:{}".format(P_A.getGenom()))
-            # print("P_B:{}".format(P_B.getGenom()))
-            # graphPlot(P_A.getGenom(), isFirst=1, isLast=0, title="P_A")
-            # graphPlot(P_B.getGenom(), isFirst=1, isLast=0, title="P_B")
-            # EAXのステップ1~2を処理
+            # if(penaltyFunction(route, 2) > 0):
+            #     m_start = time.time()
+            #     route,result = modification(route) #修正に失敗していたらresultにFalse
+            #     m_time += time.time() - m_start
+            #     if result == False:
+            #         continue
 
-            ABc = preEAX(P_A, P_B)
-            # if ABc == False:
-            #     print("False")
+            if len(path) != m:
+                print("ルート数が異なる")
+                continue
+            # print("ここまである:{}".format(len(route)))
+            ditance = penaltyFunction(route, option=0)
+            evaluation = penaltyFunction(route, option=1)
+            # sys.exit()
+            # print(distance)
+            # GAクラスに解，評価値，距離を保存
+            current_generation_individual_group.append(ga.genom(route, evaluation, distance))
 
-            # AB_cycleが構築できた場合，子解を生成する
-            if ABc != False:
-                # EAXのステップ3~5
-                for j in range(MAX_CHILDREN):
-                    # 局所探索用のランダムな並びを生成
-                    random_order = [k for k in range(1, num_shelter)]
-                    random.shuffle(random_order)
+            print("個体【{}】:{}".format(indi_count, current_generation_individual_group[indi_count].getGenom()))
+            print("評価{}".format(current_generation_individual_group[indi_count].getEvaluation()))
+            print("距離{}".format(current_generation_individual_group[indi_count].getDistance()))
+            print("-----------------------------------------------------------------")
+            indi_count += 1
+            sys.stdout.write("\r%d個初期解生成" % indi_count)
+            sys.stdout.flush()
+            time.sleep(0.01)
+            if indi_count == MAX_GENOM_LIST:
+                print("")
+                break
 
-                    child = edgeAssemblyCrossover(P_A, P_B, ABc)
-                    route = child
+        # graphPlot(current_generation_individual_group[0].getGenom(), isFirst=0, isLast=0, title="1st generation")
+        monotonous = current_generation_individual_group[0].getDistance()
+        mono_count = 0
 
-                    # route,result = modification(child) #修正に失敗していたらresultにFalse
-                    # if result == False:
-                    #     child = copy.deepcopy(P_A.getGenom)
-
-                    # sys.stdout.write("\r%d回目の交叉" % j)
-                    # sys.stdout.flush()
-                    # time.sleep(0.00001)
-
-
-                    # path = routeToPath(child)
-                    # """
-                    # EAX後の局所探索
-                    # f_option:
-                    #     0→距離のみの評価
-                    #     1→ペナルティ関数による評価
-                    #     2→ペナルティ項が0以下になるように
-                    # """
-                    # for n, k in enumerate(random_order):
-                    #     prePath = copy.deepcopy(path)
-                    #     local_route = Neighborhoods(k, path, f_option=1, reduce_route=0)
-                    #     path = routeToPath(local_route)
-                    #     if path == False:
-                    #         path = copy.deepcopy(prePath)
-                    #     sys.stdout.write("\r%d個目の局所探索" % n)
-                    #     sys.stdout.flush()
-                    #     time.sleep(0.01)
-
-                    # c.append(pathToRoute(path))
-                    c.append(route)
-                    c_cost.append(penaltyFunction(c[j], option=0))
-                    c_eval.append(penaltyFunction(c[j], option=1))
-
-                # """
-                # orderCrossoverにてプログラム全体の処理確認
-                # """
-                # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
-                # for j in range(MAX_CHILDREN):
-                #     c.append(orderCrossover(P_A, P_B))
-                #     a, b = createEdgeSet(c[j]) # bがコスト
-                #     Eval.append(penaltyFunction(a, option=1))
-                #     c_cost.append(b)
-
-                # 現在の親ペアから生成された子の中で一番コストの低い個体が親Aよりも
-                # 環境に適合している場合，親Aのインデックスを指定して入れ替える
-                if min(c_eval) < P_A.getEvaluation():
-                    min_idx = c_eval.index(min(c_eval))
-                    # print("子の評価値:{}".format(c_eval))
-                    # print("min_idx:{}".format(min_idx))
-                    # print("子の中で最小のコスト:{}".format(c_eval[min_idx]))
-                    current_generation_individual_group[order[i]].setGenom(c[min_idx])
-                    current_generation_individual_group[order[i]].setEvaluation(c_eval[min_idx])
-                    current_generation_individual_group[order[i]].setDistance(c_cost[min_idx])
-                    # print("入れ替わり後の親:{}".format(current_generation_individual_group[order[i]]\
-                    #                            .getEvaluation()))
 
         # 今世代の個体適用度を配列化する
         fits = [f.getEvaluation() for f in current_generation_individual_group]
@@ -2986,67 +2925,201 @@ if __name__ == '__main__':
         # print("min_idx:{}".format(min_idx))
         min_ = current_generation_individual_group[int(min_idx)].getDistance()
         min_Eval = current_generation_individual_group[int(min_idx)].getEvaluation()
-
-        if monotonous == min_Eval:
-            mono_count += 1
-        else:
-            mono_count = 0
-            monotonous = min_Eval
-
-
-        # データフレームの行を世代によって更新
-        series = pd.Series([int(count_), min_Eval, min_], index=result_df.columns)
+        print("====第{}世代====".format(int(1)))
+        print("最も優れた個体の評価値:{}".format(min_Eval))
+        series = pd.Series([int(1), min_Eval, min_], index=result_df.columns)
         result_df = result_df.append(series, ignore_index = True)
 
-        print("====第{}世代====".format(int(count_)))
-        print("最も優れた個体の評価値:{}".format(min_Eval))
+        """
+        ここまで第一世代
+        この先繰り返し
+        """
+        for count_ in range(2, MAX_GENERATION + 1):
+            #集団中の個体をランダムな順列に並べる
+            order = setRondomOrder()
 
-        # graphPlot(current_generation_individual_group[min_idx].getGenom(), \
-        #           isFirst=0, isLast=0, title= str(count_) + "Generation")
+            for i in range(MAX_GENOM_LIST):
+                # 集団中の全ての個体が丁度一度ずつ親P_Aとして選択される
+                if i < MAX_GENOM_LIST -1:
+                    P_A = current_generation_individual_group[order[i]]
+                    P_B = current_generation_individual_group[order[i+1]]
+                else:
+                    P_A = current_generation_individual_group[order[i]]
+                    P_B = current_generation_individual_group[order[0]]
 
-        # 10世代以上適応度が変わらなかった場合
-        if mono_count > 10:
-            break
+                c = [] # 子解を代入するリスト
+                c_cost = [] # 子の移動距離を代入するリスト
+                c_eval = [] # 子のペナルティ関数値を代入するリスト
+                """
+                交叉：EAX
+                """
+                # print("P_A:{}".format(P_A.getGenom()))
+                # print("P_B:{}".format(P_B.getGenom()))
+                # graphPlot(P_A.getGenom(), isFirst=1, isLast=0, title="P_A")
+                # graphPlot(P_B.getGenom(), isFirst=1, isLast=0, title="P_B")
+                # EAXのステップ1~2を処理
 
-    elapsed_time = time.time() - start
-    min_idx = fits.index(min(fits))
-    Best = current_generation_individual_group[min_idx]
-    print("計算時間:{}".format(elapsed_time))
-    print("修正時間:{}".format(m_time))
-    print(result_df)
-    print("最も優れた個体:{}".format(Best.getGenom()))
-    print("最も優れた個体の移動距離:{}".format(Best.getDistance()))
-    print("最も優れた個体の評価値:{}".format(Best.getEvaluation()))
+                ABc = preEAX(P_A, P_B)
+                # if ABc == False:
+                #     print("False")
 
-    Bestpath = copy.deepcopy(routeToPath(Best.getGenom()))
-    print(Bestpath)
-    print("ルート数:{}".format(len(Bestpath)))
-    print(checkCapacity(Bestpath))
+                # AB_cycleが構築できた場合，子解を生成する
+                if ABc != False:
+                    # EAXのステップ3~5
+                    for j in range(MAX_CHILDREN):
+                        # 局所探索用のランダムな並びを生成
+                        random_order = [k for k in range(1, num_shelter)]
+                        random.shuffle(random_order)
 
-    # first改善山登り法による局所探索法によって解を改善
-    for n, i in enumerate(random_order):
-        prePath = copy.deepcopy(Bestpath)
-        local_route = Neighborhoods(i, Bestpath, f_option=0, reduce_route=0)
-        Bestpath = routeToPath(local_route)
-        if Bestpath == False:
-            Bestpath = copy.deepcopy(prePath)
-        graphPlot(local_route, isFirst=0, isLast=0, title="local search")
-        sys.stdout.write("\r%d番目ノードの局所探索" % n)
-        sys.stdout.flush()
-        time.sleep(0.01)
+                        child = edgeAssemblyCrossover(P_A, P_B, ABc)
+                        # route = child
 
-    BestRoute = pathToRoute(Bestpath)
+                        # route,result = modification(child) #修正に失敗していたらresultにFalse
+                        # if result == False:
+                        #     child = copy.deepcopy(P_A.getGenom)
 
-    print("局所探索後")
-    distance = penaltyFunction(BestRoute, 0)
-    evaluation = penaltyFunction(BestRoute, 1)
-    over = penaltyFunction(BestRoute, 2)
-
-    print("距離:{}, 評価値:{}, 超過:{}".format(distance, evaluation, over))
+                        # sys.stdout.write("\r%d回目の交叉" % j)
+                        # sys.stdout.flush()
+                        # time.sleep(0.00001)
 
 
+                        path = routeToPath(child)
+                        """
+                        EAX後の局所探索
+                        f_option:
+                            0→距離のみの評価
+                            1→ペナルティ関数による評価
+                            2→ペナルティ項が0以下になるように
+                        """
+                        local_count = 0
+                        for n, eax in enumerate(random_order):
+                            prePath = copy.deepcopy(path)
+                            local_route = Local(eax, path, f_option=1, reduce_route=0)
+                            path = routeToPath(local_route)
+                            if path == False:
+                                path = copy.deepcopy(prePath)
+                            if path != prePath:
+                                local_count += 1
+                                if local_count >= 1:
+                                    # print("局所探索成功")
+                                    break
 
-    result_df.to_csv(saveDirectory + filename + "_result.csv", index=False)
-    graphPlot(current_generation_individual_group[min_idx].getGenom(), \
-              isFirst=1, isLast=0, title=filename + " Last Generation")
-    graphPlot(BestRoute, isFirst=0, isLast=1, title="Best Route")
+
+                        c.append(pathToRoute(path))
+                        # c.append(route)
+                        c_cost.append(penaltyFunction(c[j], option=0))
+                        c_eval.append(penaltyFunction(c[j], option=1))
+
+                    # """
+                    # orderCrossoverにてプログラム全体の処理確認
+                    # """
+                    # 各両親に対してMAX_CHILDRENの数だけ子個体を生成する
+                    # for j in range(MAX_CHILDREN):
+                    #     c.append(orderCrossover(P_A, P_B))
+                    #     a, b = createEdgeSet(c[j]) # bがコスト
+                    #     Eval.append(penaltyFunction(a, option=1))
+                    #     c_cost.append(b)
+
+                    # 現在の親ペアから生成された子の中で一番コストの低い個体が親Aよりも
+                    # 環境に適合している場合，親Aのインデックスを指定して入れ替える
+                    if min(c_eval) < P_A.getEvaluation():
+                        min_idx = c_eval.index(min(c_eval))
+                        # print("子の評価値:{}".format(c_eval))
+                        # print("min_idx:{}".format(min_idx))
+                        # print("子の中で最小のコスト:{}".format(c_eval[min_idx]))
+                        current_generation_individual_group[order[i]].setGenom(c[min_idx])
+                        current_generation_individual_group[order[i]].setEvaluation(c_eval[min_idx])
+                        current_generation_individual_group[order[i]].setDistance(c_cost[min_idx])
+                        # print("入れ替わり後の親:{}".format(current_generation_individual_group[order[i]]\
+                        #                            .getEvaluation()))
+
+            # 今世代の個体適用度を配列化する
+            fits = [f.getEvaluation() for f in current_generation_individual_group]
+            # print("fits:{}".format(fits))
+            min_idx = fits.index(min(fits)) # 最小値を求める
+            # print("min_idx:{}".format(min_idx))
+            min_ = current_generation_individual_group[int(min_idx)].getDistance()
+            min_Eval = current_generation_individual_group[int(min_idx)].getEvaluation()
+
+            if monotonous == min_Eval:
+                mono_count += 1
+            else:
+                mono_count = 0
+                monotonous = min_Eval
+
+
+            # データフレームの行を世代によって更新
+            series = pd.Series([int(count_), min_Eval, min_], index=result_df.columns)
+            result_df = result_df.append(series, ignore_index = True)
+
+            print("====第{}世代====".format(int(count_)))
+            print("最も優れた個体の評価値:{}".format(min_Eval))
+
+            # graphPlot(current_generation_individual_group[min_idx].getGenom(), \
+            #           isFirst=0, isLast=0, title= str(count_) + "Generation")
+
+            # 10世代以上適応度が変わらなかった場合
+            if mono_count > 10:
+                break
+
+        elapsed_time = time.time() - start
+        min_idx = fits.index(min(fits))
+        # 最優個体の情報
+        Best = current_generation_individual_group[min_idx]
+        print("計算時間:{}".format(elapsed_time))
+        print(result_df)
+        print("最も優れた個体:{}".format(Best.getGenom()))
+        print("最も優れた個体の移動距離:{}".format(Best.getDistance()))
+        print("最も優れた個体の評価値:{}".format(Best.getEvaluation()))
+
+        Bestpath = copy.deepcopy(routeToPath(Best.getGenom()))
+        print(Bestpath)
+        print("ルート数:{}".format(len(Bestpath)))
+
+        paramArray = [["移動距離", Best.getDistance()],
+               ["評価値", Best.getEvaluation()],
+               ["ルート数", len(Bestpath)],
+               ["計算時間", round(elapsed_time, 2)]]
+        writer.writerows(paramArray)
+        paramArray = []
+
+
+        m_start = time.time()
+        # first改善山登り法による局所探索法によって解を改善
+        for n, i in enumerate(random_order):
+            prePath = copy.deepcopy(Bestpath)
+            local_route = Neighborhoods(i, Bestpath, f_option=0, reduce_route=0)
+            Bestpath = routeToPath(local_route)
+            if Bestpath == False:
+                Bestpath = copy.deepcopy(prePath)
+            # graphPlot(local_route, isFirst=0, isLast=0, title="local search")
+        end_time = time.time() - m_start
+        print("修正時間:{}".format(round(end_time, 2)))
+
+        Bestroute = pathToRoute(Bestpath)
+        r, excess = checkCapacity(Bestpath)
+        print("ルート毎の需要:{}".format(excess))
+        print("局所探索後")
+        distance = penaltyFunction(Bestroute, 0)
+        evaluation = penaltyFunction(Bestroute, 1)
+        over = penaltyFunction(Bestroute, 2)
+
+        print("距離:{}, 評価値:{}, 超過:{}".format(distance, evaluation, over))
+
+        writer.writerow(["修正時間", round(end_time, 2)])
+        writer.writerow(["ルート毎の需要", " "])
+        writer.writerow(excess)
+        writer.writerow(["局所探索後距離", distance])
+        writer.writerow(["評価値", evaluation])
+        writer.writerow(["超過", over])
+
+        writer.writerow(["最優個体", " "])
+        writer.writerow(Best.getGenom())
+        writer.writerow(["最優ルート", " "])
+        writer.writerows(Bestpath)
+
+        result_df.to_csv(saveDirectory + "Problem" + str(No) + "_result.csv", index=False)
+        graphPlot(current_generation_individual_group[min_idx].getGenom(), \
+                  isFirst=1, isLast=0, title="Problem" + str(No) + " Last Generation")
+        graphPlot(Bestroute, isFirst=1, isLast=0, title="Problem" + str(No) + " Best Route")
+        f.close()
