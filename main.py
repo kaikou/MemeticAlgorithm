@@ -26,9 +26,9 @@ import itertools
 import math
 
 # 遺伝子集団の長さ
-MAX_GENOM_LIST = 30
+MAX_GENOM_LIST = 100
 # 各両親から生成される子個体の数
-MAX_CHILDREN = 20
+MAX_CHILDREN = 30
 # # 遺伝子選択数
 # SELECT_GENOM = 20
 # # 個体突然変異確率
@@ -38,9 +38,9 @@ MAX_CHILDREN = 20
 # 繰り返す世代数
 MAX_GENERATION = 100
 # 使用できる車両数
-m = 12
+m = 8
 # 車両の最大積載量
-CAPACITY = 200
+CAPACITY = 160
 # セービング値の効果をコントロールする係数
 LAMBDA = 1
 # N_near()関数で，どこまで近くのノードに局所探索するか
@@ -1113,11 +1113,11 @@ def routeSplit(path):
         # print("routeCapa:{}".format(routeCapa))
         # print("routeCost:{}".format(routeCost))
 
-        # エッジ数4以上のところからランダムに選ぶ
+        # エッジ数6以上のところからランダムに選ぶ
         if s_option == 0:
             IdxList = [i for i, x in enumerate(routeLength) if x >= 6]
-            print("routeLength:{}".format(routeLength))
-            print(IdxList)
+            # print("routeLength:{}".format(routeLength))
+            # print(IdxList)
         # エッジ数の多いルートを選ぶ
         elif s_option == 1:
             IdxList = [i for i, x in enumerate(routeLength) if x == max(routeLength)]
@@ -1135,7 +1135,7 @@ def routeSplit(path):
             # print(IdxList)
 
         maxIdx = random.choice(IdxList)
-        print("maxIdx:{}".format(maxIdx))
+        # print("maxIdx:{}".format(maxIdx))
         # print("それぞれの顧客数:{}".format(routeLength))
 
         # 分割するルート
@@ -1370,6 +1370,7 @@ def penaltyFunction(route, option):
             F_propose += abs(R_demands - CAPACITY)
             # F_c += R_demands - CAPACITY # ルート内の需要超過
         capaList.append(F_propose)
+        F_propose = 0
         R_demands = 0
 
 
@@ -1379,12 +1380,15 @@ def penaltyFunction(route, option):
 
     value = 0
     for capa in capaList:
-        value += np.power((capa - ave), 2)
+        # value += np.power((capa - ave), 2)
+        value += abs(capa - ave)
 
     # print(value)
     # ペナルティ関数
     # F_p = F + (ALPHA * F_c) + (BETA * F_d)
-    F_p = F + (ALPHA * value)
+    # F_p = F + (ALPHA * value)
+    F_p = value
+
     # print("F:{}, F_c:{}, F_d:{}".format(F, F_c, F_d))
     if option == 1:
         return round(F_p, 2) # ペナルティ間数値
@@ -2518,15 +2522,25 @@ def preEAX(P_A, P_B):
 
 
 def edgeAssemblyCrossover(P_A, P_B, ABc):
+    E_choice = 0.5
     E_A = P_A.getGenom() # 親Aのエッジリストを取得
     E_B = P_B.getGenom() # 親Bのエッジリストを取得
+    E_set = []
 
     """
     ステップ3:E-setを構成する
     """
-    E_set = random.choice(ABc) # Single戦略
+    # E_set = random.choice(ABc) # Single戦略
+
+    while(True):
+        for c in ABc:
+            if E_choice > (random.randint(0, 100) / Decimal(100)):
+                E_set += c[:]
+        if(E_set != []):
+            break
+
     # print("E-set:{}".format(E_set))
-    # graphPlot(E_set, isFirst=1, isLast=0, title="E-set")
+    # graphPlot(E_set, isFirst=0, isLast=1, title="E-set")
 
     """
     ステップ4:E-setを用いて中間個体を生成する
@@ -2738,7 +2752,7 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
 
 if __name__ == '__main__':
-    filename = "vrpnc3"
+    filename = "vrpnc1"
     saveDirectory = "./output/propose/"
     # 避難所情報のデータフレームを生成する
     # 引数[0]:ファイルパス，[1]:ファイル名
@@ -2798,18 +2812,21 @@ if __name__ == '__main__':
         """
         局所探索
         """
-        # print("")
-        # first改善山登り法による局所探索法によって解を改善
-        # for n, i in enumerate(random_order):
-        #     prePath = copy.deepcopy(path)
-        #     local_route = Local(i, path, f_option=1, reduce_route=0)
-        #     path = routeToPath(local_route)
-        #     if path == False:
-        #         path = copy.deepcopy(prePath)
-        #     graphPlot(local_route, isFirst=0, isLast=0, title="local search")
-        #     sys.stdout.write("\r%d番目ノードの局所探索" % n)
-        #     sys.stdout.flush()
-        #     time.sleep(0.01)
+        print("")
+        first改善山登り法による局所探索法によって解を改善
+        for n, i in enumerate(random_order):
+            prePath = copy.deepcopy(path)
+            local_route = Local(i, path, f_option=1, reduce_route=0)
+            path = routeToPath(local_route)
+            if path == False:
+                path = copy.deepcopy(prePath)
+            if path != prePath:
+                print("局所探索成功")
+                break
+            # graphPlot(local_route, isFirst=0, isLast=0, title="local search")
+            # sys.stdout.write("\r%d番目ノードの局所探索" % n)
+            # sys.stdout.flush()
+            # time.sleep(0.01)
 
         # route = pathToRoute(path)
 
@@ -2829,6 +2846,7 @@ if __name__ == '__main__':
         # print("ここまである:{}".format(len(route)))
         ditance = penaltyFunction(route, option=0)
         evaluation = penaltyFunction(route, option=1)
+        # sys.exit()
         # print(distance)
         # GAクラスに解，評価値，距離を保存
         current_generation_individual_group.append(ga.genom(route, evaluation, distance))
@@ -3004,7 +3022,6 @@ if __name__ == '__main__':
     print(Bestpath)
     print("ルート数:{}".format(len(Bestpath)))
     print(checkCapacity(Bestpath))
-
 
     # first改善山登り法による局所探索法によって解を改善
     for n, i in enumerate(random_order):
