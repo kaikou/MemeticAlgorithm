@@ -2790,7 +2790,7 @@ if __name__ == '__main__':
 
     for No in range(1, 15):
         filename = "vrpnc" + str(No)
-        saveDirectory = "./output/MAdemand/"
+        saveDirectory = "./output/MArandom/0/"
         # 避難所情報のデータフレームを生成する
         # 引数[0]:ファイルパス，[1]:ファイル名
         df = createDataFrame("./csv/Christ/", filename)
@@ -3088,7 +3088,7 @@ if __name__ == '__main__':
         # first改善山登り法による局所探索法によって解を改善
         for n, i in enumerate(random_order):
             prePath = copy.deepcopy(Bestpath)
-            local_route = Neighborhoods(i, Bestpath, f_option=0, reduce_route=0)
+            local_route = Neighborhoods(i, Bestpath, f_option=0, reduce_route=0, first=0)
             Bestpath = routeToPath(local_route)
             if Bestpath == False:
                 Bestpath = copy.deepcopy(prePath)
