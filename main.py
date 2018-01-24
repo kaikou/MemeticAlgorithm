@@ -2790,7 +2790,7 @@ if __name__ == '__main__':
 
     for No in range(1, 15):
         filename = "vrpnc" + str(No)
-        saveDirectory = "./output/MArandom/0/"
+        saveDirectory = "./output/MArandom/1/"
         # 避難所情報のデータフレームを生成する
         # 引数[0]:ファイルパス，[1]:ファイル名
         df = createDataFrame("./csv/Christ/", filename)
@@ -2810,7 +2810,7 @@ if __name__ == '__main__':
         # print("β:{}".format(BETA))
         print("顧客数:{}".format(num_shelter-1))
 
-        f = open(saveDirectory + "/config/" + "Problem" + str(No) + "_config.csv", "w")
+        f = open(saveDirectory + "config/" + "Problem" + str(No) + "_config.csv", "w")
         writer = csv.writer(f, lineterminator="\n")
         paramArray = [["ファイル名", filename + ".csv"],
                ["顧客数", num_shelter-1],
