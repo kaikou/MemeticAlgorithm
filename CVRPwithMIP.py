@@ -195,13 +195,13 @@ nx.draw_networkx(G, pos, with_labels=False, node_color='r', node_size=250)
 nx.draw_networkx_labels(G, pos, labels, font_size=12)
 nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
 
-plt.legend()
+# plt.legend("node")
 plt.xlabel("x-coordinate")
 plt.ylabel("y-coordinate")
 plt.xlim(0, 70)
 plt.ylim(0, 70)
 # plt.axis('off')
 plt.title('Delivery route')
-plt.savefig("./cvrp.png")  # save as png
+plt.savefig("./cvrpMIP.png")  # save as png
 plt.grid()
 plt.show()
