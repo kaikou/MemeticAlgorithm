@@ -2769,8 +2769,9 @@ def graphPlot(edgeList, isFirst, isLast, title):
 
 if __name__ == '__main__':
     Capa = [160, 140, 200, 200, 200, 160, 140, 200, 200, 200, 200, 200, 200, 200]
-    Vehicle = [5, 10, 8, 12, 16, 6, 11, 9, 14, 18, 7, 10, 11, 11]
-    S_OP = 2
+    Vehicle = [5, 10, 8, 12, 17, 6, 11, 9, 14, 18, 7, 10, 11, 11]
+    skip = [6, 7, 8, 9, 10, 13, 14]
+    S_OP = 3
     # 0: ランダム
     # 1: エッジ数
     # 2: 距離
@@ -2789,15 +2790,19 @@ if __name__ == '__main__':
 
 
     for No in range(1, 15):
+        if No in skip:
+            continue
+
+
         filename = "vrpnc" + str(No)
-        saveDirectory = "./output/MAcost/1/"
+        saveDirectory = "./output/MAdemand/min/"
         # 避難所情報のデータフレームを生成する
         # 引数[0]:ファイルパス，[1]:ファイル名
         df = createDataFrame("./csv/Christ/", filename)
         num_shelter = len(df.index)
 
         CAPACITY = Capa[No-1]
-        m = Vehicle[No-1] + 3
+        m = Vehicle[No-1] #+ 3
 
         print("ファイル名:{}.csv".format(filename))
         print("繰り返す世代数:{}世代".format(MAX_GENERATION))
@@ -2847,10 +2852,10 @@ if __name__ == '__main__':
             path = savingRoute(sa_route) # ３次元解
             print("セービング法のルート数:{}".format(len(path)))
             route = pathToRoute(path) # ２次元解
-            # graphPlot(route, isFirst=1, isLast=0, title="Saving Route")
-
-            path = routeSplit(path) # ルート数をmに固定
-            print("分割後ルート数:{}".format(len(path)))
+            # graphPlot(route, isFirst=0, isLast=1, title="Saving Route")
+            # sys.exit()
+            # path = routeSplit(path) # ルート数をmに固定
+            # print("分割後ルート数:{}".format(len(path)))
             route = pathToRoute(path) # ２次元解
             print(checkCapacity(path))
             # graphPlot(route, isFirst=0, isLast=1, title="Split Route")
