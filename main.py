@@ -2795,7 +2795,7 @@ if __name__ == '__main__':
 
 
         filename = "vrpnc" + str(No)
-        saveDirectory = "./output/MArandom/2/"
+        saveDirectory = "./output/MArandom/1/"
         # 避難所情報のデータフレームを生成する
         # 引数[0]:ファイルパス，[1]:ファイル名
         df = createDataFrame("./csv/Christ/", filename)
