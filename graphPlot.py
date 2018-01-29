@@ -62,7 +62,7 @@ def Plot(filepath, filename):
 
 if __name__ == '__main__':
     num = [1, 2, 3, 4, 5, 11, 12]
-    filepath = "MAdemand/min/"
+    filepath = "MArandom/3/"
 
     for i in num:
         filename = "Problem" + str(i) + "_result"
