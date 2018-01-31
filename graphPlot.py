@@ -61,8 +61,9 @@ def Plot(filepath, filename):
     plt.clf()
 
 if __name__ == '__main__':
-    num = [1, 2, 3, 4, 5, 11, 12]
-    filepath = "MArandom/3/"
+    # num = [1, 2, 3, 4, 5, 11, 12]
+    num = [1, 2, 11]
+    filepath = "MAdemand/min3/"
 
     for i in num:
         filename = "Problem" + str(i) + "_result"
