@@ -13,7 +13,6 @@
 # 個体評価を取得する場合は.getEvaluation()
 
 import GeneticAlgorithm as ga
-# from Local import Neighborhoods as local
 import random
 from decimal import Decimal
 import numpy as np
@@ -961,7 +960,8 @@ def createEdgeSet(genom):
     num_shelter : 避難所数
     cost : 避難所間のコスト行列
 @OUTPUT:
-
+    route：構築されたルートの２次元リスト
+    drt：移動距離
 """
 def savingMethod(num_shelter, cost):
     """
@@ -1056,7 +1056,7 @@ def savingMethod(num_shelter, cost):
 @INPUT:
     route:セービング法で構築されたルート(0は表示されていない)
 @OUTPUT:
-    path:ルートを辿るエッジの3次元配列(0も表示)
+    Path:ルートを辿るエッジの3次元配列(0も表示)
 """
 def savingRoute(route):
     E = []
@@ -1083,7 +1083,7 @@ def savingRoute(route):
 セービング法によって生成された初期解のうち，
 もっとも顧客数の多いルートを選び真ん中で分割する
 @INPUT:
-    path
+    path：解の3次元リスト
     (m): 固定したいルート数
 @OUTPUT:
     path
@@ -2302,6 +2302,13 @@ def modification(route):
 modification()中に用いる
 入力された3次元リストを元に，トラックの容量超過をしているルートの
 インデックスとルート毎の総需要量のリストを返す
+@INPUT:
+    path：解の3次元リスト
+@OUTPUT:
+    r：制約違反ルートのインデックスが入ったリスト
+    excess：ルート毎の需要量のリスト
+        なお、excess内の総和が0を超える場合現在のルート数では実行可能解が
+        作れないことを表すため、その時はFalseを返す
 """
 def checkCapacity(path):
     excess = []
@@ -2529,7 +2536,15 @@ def preEAX(P_A, P_B):
         return False
     return C
 
-
+"""
+交叉EAXによって子個体を生成する。
+@INPUT:
+    P_A : 親AのgenomClass
+    P_B : 親BのgenomClass
+    ※それぞれ.getGenom()でエッジ情報を取得
+@OUTPUT:
+    child：交叉によって得られた子個体
+"""
 def edgeAssemblyCrossover(P_A, P_B, ABc):
     E_choice = 0.5
     E_A = P_A.getGenom() # 親Aのエッジリストを取得
@@ -2582,7 +2597,6 @@ EAXのステップ5を処理する
 m個のルートのどれかに結合することでm個のルートからなる子を得る．
 @INPUT:
     intermediate：中間個体のエッジ集合
-    subtourIndex：部分巡回路のルートインデックス
 @OUTPUT:
     child：子個体
 """
@@ -2693,6 +2707,25 @@ def plotDepot(title):
 
 """
 グラフをプロットする
+@INPUT:
+    edgeList：解の２次元リスト
+    isFirst：
+        0：0を指定した場合特に影響なし
+        1：現在のグラフをプロットし、さらに新しいウィンドウで次のグラフをプロットできる
+          (いくつかのグラフを並べて表示したい時に使う)
+    isLast：
+        0：isFirstが0の時、isLastも0にすることで連続プロットができる
+          同じウィンドウ上で毎回上書きしながらグラフを更新する
+          (局所探索のような次々とエッジ情報が切り替わる処理の様子を観察
+          したい時に用いる)
+        1：グラフを表示してプログラムが一時停止する
+          グラフのウィンドウを閉じるとプログラムの処理が続行される
+    title：グラフに付けたいタイトルを指定する
+
+@OUTPUT：
+    グラフ描画
+
+なお、処理中にplotDepot()が呼び出され、デポの色や大きさのみを変更可能
 """
 def graphPlot(edgeList, isFirst, isLast, title):
     # X = []
@@ -2853,7 +2886,7 @@ if __name__ == '__main__':
             print("セービング法のルート数:{}".format(len(path)))
             route = pathToRoute(path) # ２次元解
             # graphPlot(route, isFirst=0, isLast=1, title="Saving Route")
-            # sys.exit()
+
             path = routeSplit(path) # ルート数をmに固定
             # print("分割後ルート数:{}".format(len(path)))
             route = pathToRoute(path) # ２次元解
@@ -2863,7 +2896,7 @@ if __name__ == '__main__':
             # 局所探索用のランダムな並びを生成
             random_order = [i for i in range(1, num_shelter)]
             random.shuffle(random_order)
-            # sys.exit()
+
             """
             局所探索
             """
@@ -2898,11 +2931,10 @@ if __name__ == '__main__':
             if len(path) != m:
                 print("ルート数が異なる")
                 continue
-            # print("ここまである:{}".format(len(route)))
+
             ditance = penaltyFunction(route, option=0)
             evaluation = penaltyFunction(route, option=1)
-            # sys.exit()
-            # print(distance)
+
             # GAクラスに解，評価値，距離を保存
             current_generation_individual_group.append(ga.genom(route, evaluation, distance))
 
@@ -3063,7 +3095,7 @@ if __name__ == '__main__':
             # graphPlot(current_generation_individual_group[min_idx].getGenom(), \
             #           isFirst=0, isLast=0, title= str(count_) + "Generation")
 
-            # 10世代以上適応度が変わらなかった場合
+            # 10世代以上適合度が変わらなかった場合
             if mono_count > 10:
                 break
 
@@ -3090,7 +3122,6 @@ if __name__ == '__main__':
 
 
         m_start = time.time()
-        # first改善山登り法による局所探索法によって解を改善
         for n, i in enumerate(random_order):
             prePath = copy.deepcopy(Bestpath)
             local_route = Neighborhoods(i, Bestpath, f_option=0, reduce_route=0, first=0)
