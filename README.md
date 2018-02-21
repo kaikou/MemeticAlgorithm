@@ -41,6 +41,63 @@ MAのパラメータに関する記述が載っている論文
 
 
 
+## 環境構築
+本プログラムはPythonで実装した。Pythonは以下のサイトからダウンロードする。
+- https://www.python.org/downloads/
+
+PCはmacを使用して実装しているためmacでの環境構築になるが、ダウンロードしたdmgファイルを実行し
+Pythonをインストールする。
+
+Homebrewとpyenvを利用してインストールする方法もある。pyenvではPythonのバージョン切り替え等ができて便利。
+以下のサイトを参考にpyenvを導入。なお、本プログラムはPython3系に則った実装である。
+- https://qiita.com/ms-rock/items/6e4498a5963f3d9c4a67
+
+実装に使用したmacのOSとPythonのバージョンは以下の通りである。
+- macOS：High Sierra
+- バージョン：10.13.3
+- CPU：2.4GHZ Intel Core i5
+- メモリ：8GB 1600 MHz DDR3
+
+```
+$ python --version
+Python 3.6.1
+```
+
+必要なライブラリは全てPythonに搭載されている`pip`コマンドでインストールした。まず`pip`コマンドを最新にアップグレードする。
+
+```
+$ pip install --upgrade pip
+```
+
+続いて、以下のライブラリをインストールする。
+- matplotlib
+- networkx
+- numpy
+- pandas
+
+```
+pip install matplotlib networkx numpy pandas
+```
+
+本プログラムで用いたそれぞれのライブラリのバージョンは以下の通りである。
+
+```
+$ pip freeze
+matplotlib==2.0.2
+networkx==1.11
+numpy==1.13.3
+pandas==0.20.2
+```
+
+各ライブラリをプログラムで使用する場合、`inport`して用いる。以下のような略称で定義することが一般的らしい。
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import networkx as nx
+```
+
+
 ## ファイル
 - main.py : メメティックアルゴリズムを実行させるプログラム
 - GeneticAlgorithm.py : 遺伝子情報とその遺伝子の評価値を格納するクラス
@@ -82,9 +139,10 @@ $ python EdgeAssembly.py
 ```
 $ python initialize.py
 ```
-***
+
 ## main.pyの内部処理の説明
-### パッケージ等
+
+### ライブラリ等
 ```python
 import GeneticAlgorithm as ga
 import random
@@ -100,11 +158,12 @@ import math
 import csv
 ```
 
-- numpy、pandas等のパッケージをインストールしておく
+- numpy、pandas等のライブラリをインストールしておく
 - networkxはルートを視覚的に表現するためのグラフをプロットするために使用。matplotlibと組み合わせて使用する。
 - itertoolsは2つのリスト内の要素の組合せでループが回せるため非常に便利。
 - gaクラスでは各個体のエッジリスト、各個体の(目的関数における)評価値、各個体の距離を格納する。
     - 以下にGeneticAlgorithm.py中のソースコードを示す。
+
 
 ```python
 class genom:
@@ -157,11 +216,41 @@ LAMBDA = 1
 NEAR = 10
 # penaltyFunction()で，容量制約違反に課すペナルティの係数
 ALPHA = 0.003
-# penaltyFunction()で，経路長違反に課すペナルティの係数
-BETA = 1.0
-# penaltyFunction()で，経路長違反とする距離
-D = float("inf")
 ```
+
+
+変更するべきパラメータは以下の通りである。
+- MAX_GENOM_LIST：多点探索における集団の数を定義
+- MAX_CHILDREN：1組の親ペアから生成する子個体の数を定義
+- MAX_GENERATION：繰り返す世代数を定義
+- m：出力する解に求めるルート数
+- CAPACITY：トラックの容量(制約)
+- LAMBDA：セービング法で構築されるルートの形状パラメータ
+    - 有効範囲は0≦LAMBDA≦2 とされているが、1.0で問題ないと思われる
+- NEAR：局所探索においてエッジをつなぎ替える相手ノードを何番目まで近くのノードから選択するかを定義
+
+以降の説明内に出てくるパラメータにも変更箇所がある。
+- S_OP：ルート分割において、どの方法でルートを分割するかを定義
+- filename：対象とするcsvファイル名
+- saveDirectory：結果を保存するフォルダまでのパス
+
+また、`Local()`、`penaltyFunction()`、`graphPlot()`の引数にも以下の
+- f_option：解をどのように評価するか
+- reduce_route：ルート数が減る解への更新を許容するか
+- option：解をどのように評価するか(f_optionの設定に連動)
+- isFirst：現在のグラフを描画し次のグラフを新しいウィンドウで描画するか
+- isLast：連続描画における最後の描画か
+- title：グラフのタイトル
+
+といった設定するパラメータがあるが、これはプログラムの各所によって使い分けているため詳しくは以降の説明を参照のこと。
+
+これらのパラメータを設定後、
+```
+$ python main.py
+```
+により実行する。
+
+***
 
 ### メイン部
 順に説明します。
@@ -489,11 +578,11 @@ for n, i in enumerate(random_order):
 @INPUT:
     v: 近傍操作対象ノード
     path: 解の3次元リスト
-    f_option: ペナルティ関数をどのように評価するか
+    f_option: 解をどのように評価するか
         2: 容量超過
         1: ペナルティ関数による評価
         0: 総移動コストのみの評価
-    reduce_route: 経路数が減る遷移を許容するか
+    reduce_route: ルート数が減る解への更新を許容するか
         1: 許容する
         0: 許容しない
 """
