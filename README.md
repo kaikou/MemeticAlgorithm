@@ -89,7 +89,7 @@ numpy==1.13.3
 pandas==0.20.2
 ```
 
-各ライブラリをプログラムで使用する場合、`inport`して用いる。以下のような略称で定義することが一般的らしい。
+各ライブラリをプログラムで使用する場合、`import`して用いる。以下のような略称で定義することが一般的らしい。
 ```python
 import matplotlib.pyplot as plt
 import numpy as np
